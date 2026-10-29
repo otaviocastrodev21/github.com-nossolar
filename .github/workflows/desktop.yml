@@ -1,0 +1,127 @@
+name: Aplicativo de computador
+
+# Gera os instaladores dos três sistemas de uma vez. Cada sistema precisa ser
+# empacotado na sua própria plataforma — por isso a matriz.
+#
+# Para publicar uma versão:
+#   git tag v1.0.0 && git push --tags
+#
+# Também dá para disparar manualmente em Actions → "Aplicativo de computador".
+#
+# Antes do primeiro uso, cadastre em Settings → Secrets and variables → Actions:
+#   VITE_SUPABASE_URL
+#   VITE_SUPABASE_ANON_KEY
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  empacotar:
+    name: ${{ matrix.rotulo }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rotulo: Windows (.exe)
+            alvo: --win
+            artefatos: |
+              release/*.exe
+              release/*.blockmap
+          - os: macos-latest
+            rotulo: macOS (.dmg)
+            alvo: --mac
+            artefatos: |
+              release/*.dmg
+              release/*.zip
+          - os: ubuntu-latest
+            rotulo: Linux (.AppImage, .deb, .rpm)
+            alvo: --linux
+            artefatos: |
+              release/*.AppImage
+              release/*.deb
+              release/*.rpm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Dependências do empacotador (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libarchive-tools
+
+      - name: Verificar antes de empacotar
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Build da interface
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Empacotar
+        run: npx electron-builder ${{ matrix.alvo }} --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sem certificado cadastrado, o pacote sai sem assinatura — o sistema
+          # vai pedir confirmação na primeira abertura. Veja o README.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Guardar os instaladores
+        uses: actions/upload-artifact@v4
+        with:
+          name: nosso-lar-${{ runner.os }}
+          path: ${{ matrix.artefatos }}
+          if-no-files-found: error
+          retention-days: 30
+
+  publicar:
+    name: Publicar a versão
+    needs: empacotar
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artefatos
+          merge-multiple: true
+
+      - name: Criar a versão no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artefatos/**/*
+          draft: true
+          generate_release_notes: true
+          name: Nosso Lar ${{ github.ref_name }}
+          body: |
+            ## Nosso Lar ${{ github.ref_name }}
+
+            Baixe o arquivo do seu sistema:
+
+            | Sistema | Arquivo |
+            |---|---|
+            | Windows | `...instalador.exe` (instala) ou `...portatil.exe` (abre direto) |
+            | macOS | `....dmg` |
+            | Linux | `....AppImage` (abre direto), `....deb` ou `....rpm` |
+
+            Os pacotes não são assinados digitalmente, então na primeira abertura
+            o sistema pede confirmação. O README explica como seguir em cada um.

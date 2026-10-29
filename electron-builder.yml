@@ -1,0 +1,125 @@
+# ============================================================================
+#  Empacotamento do aplicativo de computador — Nosso Lar
+#
+#  Gera instaladores para Windows, macOS e Linux a partir do mesmo código.
+#  Cada sistema precisa ser empacotado na sua própria plataforma (ou pela
+#  automação em .github/workflows/desktop.yml, que cobre os três de uma vez).
+# ============================================================================
+
+appId: br.com.nossolar.app
+productName: Nosso Lar
+copyright: Nosso Lar
+
+directories:
+  output: release
+  buildResources: build
+
+# Só o necessário entra no pacote. Todas as bibliotecas da interface já foram
+# empacotadas pelo Vite dentro de `dist`, então `node_modules` fica de fora.
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - '!node_modules/**/*'
+  - '!src/**/*'
+  - '!supabase/**/*'
+  - '!scripts/**/*'
+  - '!release/**/*'
+  - '!**/*.map'
+
+asar: true
+npmRebuild: false
+buildDependenciesFromSource: false
+
+# ─────────────────────────────── Windows ───────────────────────────────────
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Nosso Lar
+  artifactName: ${productName}-${version}-${arch}-instalador.${ext}
+  uninstallDisplayName: Nosso Lar
+
+portable:
+  artifactName: ${productName}-${version}-portatil.${ext}
+
+# ──────────────────────────────── macOS ────────────────────────────────────
+mac:
+  icon: build/icon.icns
+  category: public.app-category.finance
+  darkModeSupport: false
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch: [universal]
+    - target: zip
+      arch: [universal]
+
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  title: ${productName}
+  contents:
+    - x: 140
+      y: 180
+      type: file
+    - x: 400
+      y: 180
+      type: link
+      path: /Applications
+
+# ──────────────────────────────── Linux ────────────────────────────────────
+linux:
+  icon: build/icon.png
+  category: Office;Finance
+  synopsis: Controle do enxoval e do orçamento do casal
+  description: >-
+    Nosso Lar organiza o enxoval item por item, registra as compras e os valores
+    pagos, acompanha o orçamento e mostra o que ainda falta comprar. Os dados
+    ficam no Supabase do casal e sincronizam entre os dispositivos.
+  desktop:
+    entry:
+      Name: Nosso Lar
+      Comment: Nosso enxoval, nossos planos.
+      Keywords: enxoval;casa;orcamento;compras;financeiro;
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64, arm64]
+    - target: rpm
+      arch: [x64]
+
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+deb:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libsecret-1-0
+
+rpm:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+# Publicação desativada: os instaladores ficam em `release/` para distribuir
+# como o casal preferir.
+publish: null

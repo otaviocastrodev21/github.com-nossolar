@@ -1,0 +1,51 @@
+name: Verificação
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verificar:
+    name: Tipos, testes e build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificação de tipos
+        run: npm run typecheck
+
+      - name: Testes
+        run: npm test
+
+      - name: Conferir que os ícones estão em dia
+        run: |
+          npm run gen:icons
+          git diff --exit-code -- public build \
+            || (echo "::error::Os ícones estão desatualizados. Rode 'npm run gen:icons' e versione o resultado." && exit 1)
+
+      - name: Conferir que o SQL do catálogo está em dia
+        run: |
+          npm run gen:catalog
+          git diff --exit-code -- supabase \
+            || (echo "::error::O SQL do catálogo está desatualizado. Rode 'npm run gen:catalog' e versione o resultado." && exit 1)
+
+      - name: Build de produção
+        run: npm run build
+        env:
+          # Valores de exemplo: o build só precisa que as variáveis existam.
+          VITE_SUPABASE_URL: https://exemplo.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.exemplo-para-build.assinatura' }}
+
+      - name: Verificar o aplicativo de computador
+        run: xvfb-run --auto-servernum node scripts/desktop.mjs --smoke

@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===========================================================================
+   Nosso Lar — identidade visual
+   Branco quente predominante, bege e madeira nos detalhes, verde-oliva para
+   progresso e conclusão, preto fosco só em texto e pontuações.
+
+   A paleta de gráficos é uma rampa ordinal de um único matiz derivada do
+   verde-oliva da marca (#7D8467) e validada contra a superfície #F7F6F2:
+   lightness monótona, passos >= 0.06 de ΔL, ponta clara em 2,44:1, matiz único.
+   =========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* Superfícies */
+  --surface-page: #efece4;
+  --surface-1: #f7f6f2; /* superfície dos cards e dos gráficos */
+  --surface-2: #fdfcfa;
+  --hairline: #e6e3da;
+
+  /* Tinta */
+  --text-primary: #242424;
+  --text-secondary: #5c5a53;
+  --text-muted: #7a776d;
+
+  /* Série dos gráficos (um matiz, rampa validada) */
+  --series: #78815c;
+  --series-line: #5c643f;
+  --series-wash: rgba(120, 129, 92, 0.1);
+  --track: #eff2e7;
+
+  /* Rampa ordinal de progresso: pendente -> parcial -> comprado */
+  --step-pendente: #9ba382;
+  --step-parcial: #78815c;
+  --step-comprado: #434a2a;
+  --step-excluido: #c3bcae;
+
+  /* Status (escala fixa, sempre com ícone + rótulo) */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family:
+    Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img {
+  max-width: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Foco visível e consistente em tudo que é interativo */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #5c643f;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Barra de rolagem discreta */
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d6d0c6;
+    border: 3px solid var(--surface-page);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #c3bcae;
+  }
+}
+
+@layer components {
+  /* Cartão padrão: cantos arredondados, sombra discreta */
+  .card {
+    @apply rounded-2xl border border-cream-400/70 bg-cream-100 shadow-card;
+  }
+
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+
+  /* Rótulo de seção */
+  .eyebrow {
+    @apply text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-ink-muted;
+  }
+
+  /* Campos de formulário */
+  .field {
+    @apply w-full rounded-xl border border-greige-300 bg-cream-50 px-3.5 py-2.5 text-[0.9375rem]
+           text-ink placeholder:text-ink-muted/70 transition
+           focus:border-olive-500 focus:bg-white focus:outline-none
+           focus:ring-2 focus:ring-olive-500/25
+           disabled:cursor-not-allowed disabled:bg-greige-100 disabled:text-ink-muted;
+  }
+
+  .field-error {
+    @apply border-status-critical focus:border-status-critical focus:ring-status-critical/25;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[0.8125rem] font-medium text-ink-secondary;
+  }
+
+  /* Números que precisam alinhar em colunas */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Faixa de rolagem horizontal para tabelas e gráficos largos */
+  .scroll-x {
+    @apply -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0;
+    scrollbar-width: thin;
+  }
+}
+
+/* Recharts: tipografia e eixos recessivos, sem tracejado */
+.recharts-cartesian-axis-tick-value {
+  font-size: 11.5px;
+  fill: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.recharts-cartesian-grid line {
+  stroke: var(--hairline);
+  stroke-dasharray: none;
+}
+
+.recharts-surface:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Impressão: relatórios saem legíveis em preto e branco */
+@media print {
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .card {
+    box-shadow: none;
+    border-color: #ccc;
+    break-inside: avoid;
+  }
+}
