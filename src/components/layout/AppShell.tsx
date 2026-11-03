@@ -314,7 +314,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       {/* ── Barra lateral (desktop) ── */}
-      <aside className="glass-bar sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col gap-5 border-r border-cream-400/70 px-4 py-5 lg:flex">
+      <aside className="side-bar sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col gap-5 border-r border-cream-400/70 px-4 py-5 lg:flex">
         <Brand />
         <ProgressSummary />
         <div className="min-h-0 flex-1 overflow-y-auto">

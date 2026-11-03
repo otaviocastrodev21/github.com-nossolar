@@ -73,7 +73,7 @@
   --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 2px 4px rgb(36 36 36 / 0.05),
     0 18px 40px -14px rgb(36 36 36 / 0.22);
   --shadow-pop: 0 12px 44px -12px rgb(36 36 36 / 0.32);
-  --glass: 0.72;
+  --glass: 0.86;
   --spot: rgb(198 167 125 / 0.16);
   --aurora-a: rgb(214 170 112 / 0.5);
   --aurora-b: rgb(145 158 105 / 0.42);
@@ -144,7 +144,7 @@
   --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.35),
     0 22px 48px -16px rgb(0 0 0 / 0.7);
   --shadow-pop: 0 16px 50px -12px rgb(0 0 0 / 0.75);
-  --glass: 0.7;
+  --glass: 0.88;
   --spot: rgb(174 186 130 / 0.12);
   --aurora-a: rgb(150 112 62 / 0.38);
   --aurora-b: rgb(111 126 70 / 0.36);
@@ -208,7 +208,7 @@
     --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.35),
       0 22px 48px -16px rgb(0 0 0 / 0.7);
     --shadow-pop: 0 16px 50px -12px rgb(0 0 0 / 0.75);
-    --glass: 0.7;
+    --glass: 0.88;
     --spot: rgb(174 186 130 / 0.12);
     --aurora-a: rgb(150 112 62 / 0.38);
     --aurora-b: rgb(111 126 70 / 0.36);
@@ -248,7 +248,10 @@ body {
     color 300ms ease;
 }
 
-/* ── Aurora: luz quente ao fundo, devagar, atrás de tudo ─────────────────── */
+/* ── Aurora: luz quente ao fundo, atrás de tudo ─────────────────────────────
+   Parada de propósito. Animada, ela mudava o fundo a cada quadro e obrigava
+   o navegador a refazer o desfoque das barras de vidro o tempo todo — era
+   metade do travamento ao mexer o mouse no Checklist. */
 body::before {
   content: '';
   position: fixed;
@@ -259,8 +262,6 @@ body::before {
     radial-gradient(38vmax 32vmax at 12% 8%, var(--aurora-a), transparent 70%),
     radial-gradient(42vmax 36vmax at 92% 18%, var(--aurora-b), transparent 70%),
     radial-gradient(48vmax 40vmax at 60% 100%, var(--aurora-c), transparent 70%);
-  animation: aurora 38s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 /* Grão fino: tira o aspecto "chapado" das superfícies de vidro. */
@@ -272,18 +273,6 @@ body::after {
   pointer-events: none;
   opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-@keyframes aurora {
-  0% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
-  }
-  50% {
-    transform: translate3d(3vmax, -2vmax, 0) rotate(8deg) scale(1.06);
-  }
-  100% {
-    transform: translate3d(-3vmax, 2vmax, 0) rotate(-6deg) scale(1.02);
-  }
 }
 
 img {
@@ -327,44 +316,53 @@ img {
 }
 
 @layer components {
-  /* Cartão de vidro: deixa a aurora passar, desfocada, e acende uma luz onde
-     o mouse está (ver useSpotlight). min-w-0: dentro de grid ou flex, um
-     cartão herda "min-width: auto" e cresce até o conteúdo mais largo,
-     empurrando a página para o lado. */
+  /* Cartão quase opaco, sobre a aurora. Sem backdrop-filter: com dezenas de
+     cartões (o Checklist tem um por categoria, com até 40 linhas), cada
+     repintura dentro de um deles obrigava o navegador a desfocar de novo o
+     fundo inteiro atrás dele — mexer o mouse derrubava a tela para 17 qps.
+     O vidro fica só nas barras fixas (.glass-bar), que são três.
+     min-w-0: dentro de grid ou flex, um cartão herda "min-width: auto" e
+     cresce até o conteúdo mais largo, empurrando a página para o lado. */
   .card {
     @apply relative isolate min-w-0 rounded-2xl border border-cream-400/70 shadow-card;
     background: rgb(var(--cream-100) / var(--glass));
-    -webkit-backdrop-filter: blur(18px) saturate(1.35);
-    backdrop-filter: blur(18px) saturate(1.35);
     transition:
       box-shadow 250ms ease,
       transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
       border-color 250ms ease;
   }
 
-  .card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    pointer-events: none;
-    opacity: 0;
-    background: radial-gradient(
-      420px circle at var(--mx, 50%) var(--my, 50%),
-      var(--spot),
-      transparent 60%
-    );
-    transition: opacity 300ms ease;
-  }
-
   @media (hover: hover) and (pointer: fine) {
-    .card:hover::after {
-      opacity: 1;
-    }
     .card:hover {
       border-color: rgb(var(--greige-300) / 0.9);
     }
+  }
+
+  /* Luz que segue o mouse (ver useSpotlight). É UM elemento só, levado para
+     dentro do cartão sob o ponteiro: o brilho é pintado uma vez e depois só
+     desliza (transform), sem repintar o cartão. */
+  .card-spot {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+  .card-spot[data-on] {
+    opacity: 1;
+  }
+  .card-spot > span {
+    position: absolute;
+    left: -320px;
+    top: -320px;
+    width: 640px;
+    height: 640px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, var(--spot), transparent);
+    will-change: transform;
   }
 
   /* Cartão que se levanta ao passar o mouse: indicadores, cards de item. */
@@ -381,11 +379,18 @@ img {
     @apply p-5 sm:p-6;
   }
 
-  /* Superfície de vidro para barras fixas (topo, lateral, rodapé). */
+  /* Vidro para as barras por onde o conteúdo passa por baixo (topo e rodapé
+     do celular). Desfoque curto: o custo cresce com o raio. */
   .glass-bar {
-    background: rgb(var(--cream-100) / 0.66);
-    -webkit-backdrop-filter: blur(22px) saturate(1.5);
-    backdrop-filter: blur(22px) saturate(1.5);
+    background: rgb(var(--cream-100) / 0.74);
+    -webkit-backdrop-filter: blur(12px) saturate(1.4);
+    backdrop-filter: blur(12px) saturate(1.4);
+  }
+
+  /* Barra lateral: nada rola atrás dela, então o vidro não mostraria nada —
+     só custaria. Sólida, com o mesmo tom. */
+  .side-bar {
+    background: linear-gradient(180deg, rgb(var(--cream-100) / 0.96), rgb(var(--cream-200) / 0.96));
   }
 
   /* Rótulo de seção */
@@ -555,9 +560,6 @@ img {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-  body::before {
-    animation: none;
   }
 }
 
