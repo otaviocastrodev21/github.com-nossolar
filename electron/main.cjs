@@ -325,21 +325,28 @@ async function createWindow() {
         titulo: document.title,
         origem: location.origin,
         ponte: window.nossoLar?.isDesktop === true,
+        naApp: !!document.querySelector('nav[aria-label=\\"Seções do sistema\\"], main'),
         texto: (document.body.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 160),
       }))()`;
 
       try {
         let report = await window.webContents.executeJavaScript(sonda);
 
-        // A primeira pintura costuma ser o estado de carregamento; damos tempo
-        // para a tela de verdade aparecer antes de julgar.
-        for (let tentativa = 0; tentativa < 20 && /Carregando|Verificando|Preparando|Abrindo/i.test(report.texto); tentativa += 1) {
-          await new Promise((resolve) => setTimeout(resolve, 400));
+        // A primeira pintura costuma ser o estado de carregamento. No primeiro
+        // uso de um aparelho há ainda a sessão a abrir e o espaço a nascer,
+        // com as 208 linhas do enxoval — por isso o orçamento é generoso.
+        const etapas = [];
+        for (let tentativa = 0; tentativa < 60 && /Carregando|Verificando|Preparando|Abrindo/i.test(report.texto); tentativa += 1) {
+          if (etapas[etapas.length - 1] !== report.texto) etapas.push(report.texto);
+          await new Promise((resolve) => setTimeout(resolve, 500));
           report = await window.webContents.executeJavaScript(sonda);
         }
 
-        const ok = report.montou && report.ponte && report.origem === appOrigin;
-        console.log(JSON.stringify({ ok, ...report }, null, 2));
+        // Antes bastava a janela montar algo: um ecrã de erro passava como
+        // sucesso. Agora é preciso ter chegado ao painel.
+        const ok =
+          report.montou && report.ponte && report.origem === appOrigin && report.naApp;
+        console.log(JSON.stringify({ ok, etapas, ...report }, null, 2));
         app.exit(ok ? 0 : 1);
       } catch (error) {
         console.error('Falha na verificação:', error);

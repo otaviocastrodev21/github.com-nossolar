@@ -8,7 +8,6 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button, Card, FullPageLoader, Notice } from '@/components/ui/primitives';
 import { SetupScreen } from '@/pages/SetupScreen';
-import { Onboarding } from '@/pages/Onboarding';
 // As telas internas carregam sob demanda: a abertura não paga pelos gráficos
 // (Recharts) nem pelas bibliotecas de relatório de quem só vai ao checklist.
 const Dashboard = lazy(() => import('@/pages/Dashboard').then((m) => ({ default: m.Dashboard })));
@@ -83,7 +82,9 @@ function AuthenticatedRoutes() {
     );
   }
 
-  if (!space) return <Onboarding />;
+  // Nenhum espaço e nenhum erro só acontece na janela em que o primeiro está
+  // sendo criado — não há tela de entrada em que parar.
+  if (!space) return <FullPageLoader label="Preparando o seu espaço…" />;
 
   return (
     <AppShell>

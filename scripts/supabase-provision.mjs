@@ -353,6 +353,7 @@ const MIGRACOES = [
   ['0002_functions.sql', 'triggers financeiros e funções (RPC)'],
   ['0003_rls.sql', 'Row Level Security, permissões por coluna e Realtime'],
   ['0004_catalog_seed.sql', 'lista inicial do enxoval'],
+  ['0005_ensure_space.sql', 'o espaço do primeiro uso, criado sozinho e só uma vez'],
 ];
 
 async function migrar(ref) {

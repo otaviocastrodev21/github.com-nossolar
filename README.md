@@ -136,14 +136,14 @@ tela de configuração explicando o que falta — não quebra.
 
 ### 1.5 Primeiro acesso
 
-1. Abra o aplicativo. Não há cadastro: diga apenas **como podemos te chamar**
-   — é o nome que aparece ao lado de cada compra.
-2. **Criar nosso espaço** — isso cadastra as 14 categorias e as 208 linhas do
-   enxoval automaticamente.
-3. Em **Configurações → Quem tem acesso**, gere o **código de recuperação** e
-   anote. Sem ele, limpar os dados do navegador significa perder o acesso.
-4. Ainda ali, gere um **código de pareamento** e digite no aparelho da outra
-   pessoa.
+1. Abra o aplicativo. Não há tela nenhuma antes do painel: a sessão é aberta
+   sozinha e o espaço nasce já com as 14 categorias e as 208 linhas do enxoval.
+2. Em **Configurações → Você**, diga **como podemos te chamar** — é o nome que
+   aparece ao lado de cada compra. Até lá, você consta como *Participante*.
+3. Ainda em **Configurações**, gere o **código de recuperação** e anote. Sem
+   ele, limpar os dados do navegador significa perder o acesso.
+4. Gere também um **código de pareamento** e digite-o no outro aparelho, em
+   **Configurações → Entrar em outro espaço**.
 5. Em **Financeiro**, defina o orçamento total. Até isso acontecer, saldo e
    alertas ficam em branco: nada é estimado por conta própria.
 
@@ -219,9 +219,10 @@ em preços ou compras.
 
 ## 3. Como o casal compartilha a lista
 
-Não existe tela de login porque não existe conta. No primeiro uso, o aplicativo
-abre sozinho uma **sessão anônima** do Supabase: o aparelho passa a ter uma
-identidade de verdade, com `auth.uid()` próprio, sem ninguém digitar nada.
+Não existe tela de login porque não existe conta — nem tela de boas-vindas,
+nem escolha a fazer. No primeiro uso, o aplicativo abre sozinho uma **sessão
+anônima** do Supabase e cria o espaço: o aparelho passa a ter uma identidade de
+verdade, com `auth.uid()` próprio, e a primeira coisa que aparece é o painel.
 
 Daí em diante, tudo o que protegia os dados antes continua valendo — o Row
 Level Security é escrito sobre `auth.uid()`, e ele não sabe (nem precisa saber)
@@ -230,10 +231,12 @@ se a identidade veio de um e-mail ou de uma sessão anônima.
 ```
 Aparelho da Ana                                 Aparelho do Bruno
    │                                                   │
-   ├─ abre o app → sessão anônima criada               ├─ abre o app → outra sessão anônima
-   ├─ "Começar do zero" → espaço + 208 itens           │
+   ├─ abre o app → sessão + espaço + 208 itens         ├─ abre o app → idem, no espaço dele
+   ├─ cai direto no painel                             │
    ├─ Configurações → gerar código  ──  ABCD-EFGH  ──► │
-   │                                                   ├─ "Tenho um código" → digita
+   │                                                   ├─ Configurações → Entrar em outro
+   │                                                   │  espaço → digita o código
+   │                                                   │  (o espaço vazio dele é descartado)
    └──────────── mesmo espaço, dados sincronizados ────┘
 ```
 
@@ -858,7 +861,7 @@ ou instalar na tela de início — veja a [seção 10](#10-instalar-no-computado
     │   ├── dashboard/           # figuras e gráficos
     │   ├── checklist/           # formulário e detalhe do item
     │   └── purchases/           # formulário de compra
-    └── pages/                   # as 7 páginas + onboarding e tela de configuração
+    └── pages/                   # as 7 páginas + a tela de configuração
 ```
 
 O arquivo para ler primeiro é [`src/lib/calc.ts`](src/lib/calc.ts): ele define,

@@ -91,6 +91,8 @@ interface SpaceValue extends SpaceData {
   itemById: Map<string, Item>;
   memberName: (userId: string | null | undefined) => string;
   isOwner: boolean;
+  /** Espaço recém-nascido em que ninguém digitou nada ainda. */
+  spaceIsUntouched: boolean;
 
   refresh: () => Promise<void>;
   selectSpace: (spaceId: string) => void;
@@ -147,6 +149,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
   const [monthKey, setMonthKey] = useState<string>(() => currentMonthKey());
 
   const loadedSpaceRef = useRef<string | null>(null);
+  const firstSpaceRef = useRef<Promise<string> | null>(null);
   const refreshTimer = useRef<number | null>(null);
 
   const space = useMemo(
@@ -261,6 +264,30 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     } satisfies SpaceData;
   }, []);
 
+  /**
+   * Cria o espaço do primeiro uso. Guarda a promessa em vez de um booleano
+   * porque o efeito roda duas vezes no modo estrito do React: quem chegar
+   * depois espera a mesma criação em vez de abrir um segundo espaço. Se
+   * falhar, a promessa é descartada para que "Tentar novamente" funcione.
+   */
+  const ensureFirstSpace = useCallback(async () => {
+    firstSpaceRef.current ??= (async () => {
+      // `ensure_space` devolve o espaço que já existe em vez de criar outro, e
+      // serializa no banco — duas abas abertas no primeiro uso não produzem
+      // duas listas de 208 linhas.
+      const { data: created, error: rpcError } = await supabase.rpc('ensure_space');
+      if (rpcError) throw new Error(friendlyError(rpcError));
+      return created as string;
+    })();
+
+    try {
+      return await firstSpaceRef.current;
+    } catch (caught) {
+      firstSpaceRef.current = null;
+      throw caught;
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     if (!user) return;
 
@@ -279,11 +306,13 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
         writeStored(ACTIVE_SPACE_KEY, targetId);
       }
 
+      // Primeiro uso deste aparelho. Não há nada a perguntar: o espaço nasce
+      // aqui, já com a lista do enxoval, e a pessoa cai direto no painel.
       if (!targetId) {
-        setData(EMPTY_DATA);
-        loadedSpaceRef.current = null;
-        setError(null);
-        return;
+        targetId = await ensureFirstSpace();
+        setActiveSpaceId(targetId);
+        writeStored(ACTIVE_SPACE_KEY, targetId);
+        await loadSpaces();
       }
 
       const next = await loadSpaceData(targetId);
@@ -296,7 +325,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user, activeSpaceId, loadSpaces, loadSpaceData]);
+  }, [user, activeSpaceId, loadSpaces, loadSpaceData, ensureFirstSpace]);
 
   // Recarrega quando muda o usuário ou o espaço selecionado.
   useEffect(() => {
@@ -304,6 +333,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       setSpaces([]);
       setData(EMPTY_DATA);
       loadedSpaceRef.current = null;
+      firstSpaceRef.current = null;
       setLoading(false);
       return;
     }
@@ -484,20 +514,58 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  /**
+   * Como o espaço do primeiro uso nasce sozinho, quem entra com um código
+   * normalmente deixa atrás de si um espaço recém-criado em que ninguém
+   * digitou nada. Guardá-lo só geraria confusão — duas listas de 208 linhas
+   * e nenhuma pista de qual é a de verdade. Então ele é descartado, mas
+   * apenas se for comprovadamente intocado e só seu.
+   */
+  const untouchedOwnSpace = useCallback(
+    (spaceId: string | null): boolean => {
+      if (!spaceId || !user) return false;
+      if (spaces.find((candidate) => candidate.id === spaceId)?.created_by !== user.id) return false;
+      if (data.members.length !== 1) return false;
+
+      return (
+        data.purchases.length === 0 &&
+        data.extraExpenses.length === 0 &&
+        data.budgets.length === 0 &&
+        data.items.every((item) => item.unit_price_estimate === 0 && item.qty_bought === 0)
+      );
+    },
+    [user, spaces, data],
+  );
+
+  const spaceIsUntouched = useMemo(
+    () => untouchedOwnSpace(activeSpaceId),
+    [untouchedOwnSpace, activeSpaceId],
+  );
+
   const joinWithCode = useCallback(
     async (code: string) => {
+      const previous = activeSpaceId;
+      const discardPrevious = untouchedOwnSpace(previous);
+
       const { data: spaceId, error: rpcError } = await supabase.rpc('join_with_code', {
         p_code: code.trim(),
       });
       if (rpcError) throw new Error(friendlyError(rpcError));
       const id = spaceId as string;
+
+      if (previous && discardPrevious && previous !== id) {
+        // Falhar aqui não atrapalha em nada: a entrada no espaço já ocorreu.
+        await supabase.from('spaces').delete().eq('id', previous);
+        firstSpaceRef.current = null;
+      }
+
       setActiveSpaceId(id);
       writeStored(ACTIVE_SPACE_KEY, id);
       loadedSpaceRef.current = null;
       await refresh();
       return id;
     },
-    [refresh],
+    [activeSpaceId, untouchedOwnSpace, refresh],
   );
 
   const removeMember = useCallback(
@@ -521,6 +589,8 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     setActiveSpaceId(null);
     writeStored(ACTIVE_SPACE_KEY, null);
     loadedSpaceRef.current = null;
+    // Sem isto, o espaço que nasce depois seria o mesmo que acabou de sair.
+    firstSpaceRef.current = null;
     await refresh();
   }, [requireSpace, refresh]);
 
@@ -796,6 +866,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     createSpace,
     updateSpace,
     seedCatalog,
+    spaceIsUntouched,
     createCode,
     revokeCode,
     joinWithCode,

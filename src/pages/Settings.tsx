@@ -5,6 +5,7 @@ import {
   History,
   KeyRound,
   LifeBuoy,
+  LogIn,
   LogOut,
   Pencil,
   Plus,
@@ -19,6 +20,7 @@ import {
 import { PageHeader } from '@/components/layout/AppShell';
 import { Button, Card, CardHeader, Chip, EmptyState, Notice } from '@/components/ui/primitives';
 import { Field, Input, MoneyInput } from '@/components/ui/form';
+import { CodeInput } from '@/components/ui/CodeInput';
 import { ConfirmDialog, Modal } from '@/components/ui/Modal';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useSession } from '@/contexts/SessionContext';
@@ -40,6 +42,8 @@ export function Settings() {
     seedCatalog,
     createCode,
     revokeCode,
+    joinWithCode,
+    spaceIsUntouched,
     removeMember,
     leaveSpace,
     createCategory,
@@ -58,6 +62,7 @@ export function Settings() {
   );
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [novoCodigo, setNovoCodigo] = useState<string | null>(null);
+  const [codigoEntrada, setCodigoEntrada] = useState('');
   const [newCategory, setNewCategory] = useState({ code: '', name: '' });
   const [categoryModal, setCategoryModal] = useState<{ id: string; name: string } | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
@@ -92,6 +97,15 @@ export function Settings() {
     } finally {
       setNovoCodigo(null);
     }
+  };
+
+  const espacoIntocado = spaceIsUntouched;
+
+  const entrarComCodigo = async () => {
+    const limpo = codigoEntrada.replace(/[^A-Za-z0-9]/g, '');
+    if (limpo.length < 6) return;
+    const deu = await guard('entrar', () => joinWithCode(codigoEntrada), 'Pronto — vocês agora dividem a mesma lista.');
+    if (deu) setCodigoEntrada('');
   };
 
   const agora = Date.now();
@@ -328,6 +342,49 @@ export function Settings() {
             ) : null}
           </div>
 
+          {/* ── Entrar em outro espaço ── */}
+          <div className="border-t border-cream-400/70 px-5 py-5 sm:px-6">
+            <h3 className="mb-1 text-[0.9375rem] font-semibold text-ink">
+              Entrar em outro espaço
+            </h3>
+            <p className="mb-3 text-[0.875rem] leading-relaxed text-ink-secondary">
+              Recebeu um código do outro aparelho? Digite aqui. Serve tanto o de pareamento
+              quanto o de recuperação.
+            </p>
+
+            <Field label="Código de acesso" htmlFor="codigo-entrada" className="max-w-xs">
+              <CodeInput
+                id="codigo-entrada"
+                value={codigoEntrada}
+                onChange={setCodigoEntrada}
+                onEnter={() => void entrarComCodigo()}
+              />
+            </Field>
+
+            <Button
+              variant="primary"
+              className="mt-3"
+              loading={busy === "entrar"}
+              disabled={codigoEntrada.replace(/[^A-Za-z0-9]/g, "").length < 6}
+              onClick={() => void entrarComCodigo()}
+            >
+              <LogIn className="h-4 w-4" aria-hidden />
+              Entrar no espaço
+            </Button>
+
+            {espacoIntocado ? (
+              <p className="mt-3 text-[0.8125rem] leading-relaxed text-ink-muted">
+                Este espaço ainda está em branco, então ele será descartado na troca.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <Notice tone="warning" icon={<Shield className="h-4.5 w-4.5" />}>
+                  O que vocês já registraram aqui fica neste espaço e não vai junto. Entre com um
+                  código apenas se a lista de verdade for a do outro aparelho.
+                </Notice>
+              </div>
+            )}
+          </div>
           {/* ── Código de recuperação ── */}
           <div className="border-t border-cream-400/70 px-5 py-5 sm:px-6">
             <h3 className="mb-1 flex items-center gap-2 text-[0.9375rem] font-semibold text-ink">
