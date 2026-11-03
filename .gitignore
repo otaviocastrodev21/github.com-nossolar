@@ -13,3 +13,6 @@ dev-dist/
 
 # Token de acesso do Supabase (temporário, nunca versionar)
 .supabase-token
+
+# Ajustes do editor de cada um
+.vscode/
