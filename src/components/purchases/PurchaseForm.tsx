@@ -7,7 +7,7 @@ import { Checkbox, Field, Input, MoneyInput, Select, Textarea } from '@/componen
 import { useSpace } from '@/contexts/SpaceContext';
 import { useSession } from '@/contexts/SessionContext';
 import { useToast } from '@/contexts/ToastContext';
-import { cents, money, parseNumberBR, quantity, todayISO, uuid } from '@/lib/format';
+import { cents, money, parseNumberBR, quantity, todayISO, unitFor, uuid } from '@/lib/format';
 import { computePurchaseTotal } from '@/lib/calc';
 import { PAYMENT_LABEL } from '@/types/database';
 import type { Item, PaymentMethod, Purchase } from '@/types/database';
@@ -340,7 +340,7 @@ export function PurchaseForm({
                 {groupItems.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name}
-                    {item.is_task ? ' (tarefa)' : ` — falta ${quantity(item.qty_pending)} ${item.unit}`}
+                    {item.is_task ? ' (tarefa)' : ` — falta ${quantity(item.qty_pending)} ${unitFor(Number(item.qty_pending), item.unit)}`}
                   </option>
                 ))}
               </optgroup>
@@ -365,7 +365,7 @@ export function PurchaseForm({
         </Field>
 
         {/* ── Essenciais ── */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <Field
             label="Quantidade"
             htmlFor="compra-qty"
@@ -398,7 +398,13 @@ export function PurchaseForm({
             />
           </Field>
 
-          <Field label="Data da compra" htmlFor="compra-data" required error={errors.purchasedAt}>
+          <Field
+            label="Data da compra"
+            htmlFor="compra-data"
+            required
+            error={errors.purchasedAt}
+            className="col-span-2 sm:col-span-1"
+          >
             <Input
               id="compra-data"
               type="date"
@@ -411,7 +417,7 @@ export function PurchaseForm({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <Field label="Desconto" htmlFor="compra-desconto">
             <MoneyInput
               id="compra-desconto"
@@ -429,6 +435,7 @@ export function PurchaseForm({
           </Field>
 
           <Field
+            className="col-span-2 sm:col-span-1"
             label="Total pago"
             htmlFor="compra-total"
             required
@@ -459,7 +466,7 @@ export function PurchaseForm({
           <button
             type="button"
             onClick={() => setForm((current) => ({ ...current, totalTouched: false }))}
-            className="inline-flex w-fit items-center gap-1.5 text-[0.8125rem] font-medium text-olive-700 underline decoration-olive-300 underline-offset-2 hover:decoration-olive-600"
+            className="inline-flex w-fit items-center gap-1.5 text-[0.8125rem] font-medium text-olive-700 underline decoration-olive-300 underline-offset-2 hover:decoration-olive-600 touch:-my-2.5 touch:py-2.5"
           >
             <Wand2 className="h-3.5 w-3.5" aria-hidden />
             Usar o total calculado ({money(parsed.computed)})
@@ -514,7 +521,7 @@ export function PurchaseForm({
           type="button"
           onClick={() => setShowMore((current) => !current)}
           aria-expanded={showMore}
-          className="inline-flex w-fit items-center gap-1.5 rounded-lg text-[0.875rem] font-medium text-ink-secondary transition hover:text-ink"
+          className="inline-flex w-fit items-center gap-1.5 rounded-lg text-[0.875rem] font-medium text-ink-secondary transition hover:text-ink touch:-my-2.5 touch:py-2.5"
         >
           <ChevronDown
             className={clsx('h-4 w-4 transition-transform', showMore && 'rotate-180')}
@@ -566,7 +573,7 @@ export function PurchaseForm({
               </Select>
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
               <Field label="Número de parcelas" htmlFor="compra-parcelas" error={errors.installments}>
                 <Input
                   id="compra-parcelas"
@@ -595,6 +602,7 @@ export function PurchaseForm({
               </Field>
 
               <Field
+                className="col-span-2 sm:col-span-1"
                 label="1º vencimento"
                 htmlFor="compra-vencimento"
                 hint={parsed.installments > 1 ? 'As demais seguem de mês em mês.' : 'Só para parceladas.'}

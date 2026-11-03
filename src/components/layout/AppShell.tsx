@@ -262,7 +262,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Fechar menu"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                className="grid h-9 w-9 touch:h-10 touch:w-10 shrink-0 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
               >
                 <X className="h-4 w-4" aria-hidden />
               </button>
@@ -330,7 +330,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main
           id="conteudo"
-          className="min-w-0 flex-1 px-4 py-5 pb-24 sm:px-6 sm:py-6 lg:px-8 lg:pb-8"
+          className="min-w-0 flex-1 px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8 lg:pb-8"
         >
           <ConnectionBanner />
           {children}

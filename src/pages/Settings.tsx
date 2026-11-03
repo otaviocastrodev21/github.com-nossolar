@@ -481,7 +481,7 @@ export function Settings() {
                       title={`Renomear ${category.name}`}
                       aria-label={`Renomear ${category.name}`}
                       onClick={() => setCategoryModal({ id: category.id, name: category.name })}
-                      className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                      className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                     >
                       <Pencil className="h-4 w-4" aria-hidden />
                     </button>
@@ -491,7 +491,7 @@ export function Settings() {
                       aria-label={`Excluir ${category.name}`}
                       disabled={count > 0}
                       onClick={() => setConfirmDeleteCategory(category.id)}
-                      className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
+                      className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
                     </button>

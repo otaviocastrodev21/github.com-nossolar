@@ -86,7 +86,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       <input
         ref={ref}
         aria-invalid={invalid || undefined}
-        className="min-w-0 flex-1 bg-transparent px-2.5 py-2.5 text-[0.9375rem] text-ink outline-none placeholder:text-ink-muted/70"
+        // touch:text-base: este campo não usa a classe .field, então não
+        // herdava os 16px que evitam o zoom do iPhone — era todo campo de
+        // dinheiro (MoneyInput usa o prefixo "R$").
+        className="min-w-0 flex-1 bg-transparent px-2.5 py-2.5 text-[0.9375rem] text-ink outline-none placeholder:text-ink-muted/70 touch:text-base"
         {...rest}
       />
       {suffix ? (
@@ -174,15 +177,24 @@ export function Checkbox({
   return (
     <div className={clsx('flex items-start gap-2.5', className)}>
       <span className="relative mt-0.5 inline-flex h-5 w-5 shrink-0">
+        {/* O campo é só a área de toque: invisível, e com 40px no dedo
+            (touch:-inset-2.5) sem que o quadrado de 20px mude. Quem desenha
+            a caixa é o span logo abaixo. */}
         <input
           id={id}
           type="checkbox"
           checked={checked}
           disabled={disabled}
           onChange={(event) => onChange(event.target.checked)}
-          className="peer absolute inset-0 h-5 w-5 cursor-pointer appearance-none rounded-md border border-greige-400 bg-cream-50
-                     transition checked:border-olive-600 checked:bg-olive-600
-                     disabled:cursor-not-allowed disabled:opacity-50"
+          className="peer absolute inset-0 z-10 m-0 cursor-pointer appearance-none rounded-md opacity-0
+                     disabled:cursor-not-allowed touch:-inset-2.5"
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-md border border-greige-400 bg-cream-50 transition
+                     peer-checked:border-olive-600 peer-checked:bg-olive-600 peer-disabled:opacity-50
+                     peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2
+                     peer-focus-visible:outline-[#5c643f]"
         />
         <Check
           className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 text-cream-50 opacity-0 transition peer-checked:opacity-100"
@@ -235,7 +247,9 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             className={clsx(
               'inline-flex items-center gap-1.5 whitespace-nowrap rounded-[0.625rem] font-medium transition',
-              size === 'sm' ? 'h-8 px-2.5 text-[0.75rem]' : 'h-9 px-3 text-[0.8125rem]',
+              size === 'sm'
+                ? 'h-8 touch:h-10 touch:min-w-10 px-2.5 touch:px-3 text-[0.75rem]'
+                : 'h-9 touch:h-10 px-3 text-[0.8125rem]',
               active
                 ? 'bg-cream-50 text-ink shadow-sm'
                 : 'text-ink-muted hover:bg-cream-100 hover:text-ink-secondary',

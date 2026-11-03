@@ -185,6 +185,22 @@ export function plural(n: number, one: string, many: string): string {
   return `${integer(n)} ${n === 1 ? one : many}`;
 }
 
+const UNIT_PLURAL: Record<string, string> = {
+  par: 'pares',
+  embalagem: 'embalagens',
+};
+
+/**
+ * Unidade concordando com a quantidade: "1 jogo", "6 jogos", "2 pares".
+ * Em português, até 2 (exclusive) fica no singular — "1,5 unidade" —, e
+ * zero vai para o plural.
+ */
+export function unitFor(qty: number, unit: string): string {
+  const singular = qty > 0 && qty < 2;
+  if (singular) return unit;
+  return UNIT_PLURAL[unit] ?? `${unit}s`;
+}
+
 /** Primeiras letras para o avatar do participante. */
 export function initials(name: string | null | undefined, email?: string | null): string {
   const base = (name || '').trim() || (email || '').split('@')[0] || '?';

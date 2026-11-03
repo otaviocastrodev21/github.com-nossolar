@@ -273,9 +273,12 @@ export function BulletRow({
 
   return (
     <div className="flex flex-col gap-1.5 py-2">
+      {/* basis-auto: se o nome inteiro não cabe ao lado do valor, o valor
+          desce para a linha de baixo. Com flex-1 (base 0) quem cedia era o
+          nome, truncado até "B · B…" no celular. */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <span className="min-w-0 flex-1 truncate text-[0.875rem] font-medium text-ink">{label}</span>
-        <span className="tnum shrink-0 text-[0.875rem] text-ink">
+        <span className="min-w-0 grow basis-auto truncate text-[0.875rem] font-medium text-ink">{label}</span>
+        <span className="tnum ml-auto shrink-0 text-[0.875rem] text-ink">
           {money(spent)}
           {hasBudget ? (
             <span className="text-ink-muted"> / {money(budget)}</span>

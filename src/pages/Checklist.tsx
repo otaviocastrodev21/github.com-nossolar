@@ -26,7 +26,7 @@ import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
 import { filterItems, itemProgress, type ItemSort } from '@/lib/calc';
-import { integer, money, percentPoints, quantity } from '@/lib/format';
+import { integer, money, percentPoints, quantity, unitFor } from '@/lib/format';
 import { PRIORITY_CHIP, STATUS_CHIP, STATUS_FILL } from '@/lib/viz';
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_SHORT } from '@/types/database';
 import type { Item, ItemStatus, Priority } from '@/types/database';
@@ -539,7 +539,9 @@ function ItemRowView({
         busy && 'opacity-60',
       )}
     >
-      <div className="flex items-start gap-3">
+      {/* No celular as ações descem para uma linha própria: lado a lado, os
+          cinco botões deixavam ~90px para o nome, uma palavra por linha. */}
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-1 sm:flex-nowrap">
         <span className="pt-0.5">
           <Checkbox
             checked={done}
@@ -559,7 +561,8 @@ function ItemRowView({
               type="button"
               onClick={onOpen}
               className={clsx(
-                'min-w-0 text-left text-[0.9375rem] font-medium leading-snug transition',
+                // touch:py/-my: área de toque de ~40px sem mover o layout.
+                'min-w-0 text-left text-[0.9375rem] font-medium leading-snug transition touch:-my-2.5 touch:min-w-10 touch:py-2.5',
                 excluded ? 'text-ink-muted line-through' : 'text-ink hover:text-olive-700',
               )}
             >
@@ -579,7 +582,8 @@ function ItemRowView({
             ) : (
               <>
                 <span className="tnum">
-                  {quantity(item.qty_bought)}/{quantity(item.qty_needed)} {item.unit}
+                  {quantity(item.qty_bought)}/{quantity(item.qty_needed)}{' '}
+                  {unitFor(Number(item.qty_needed), item.unit)}
                 </span>
                 {item.qty_pending > 0 ? (
                   <span className="tnum">faltam {quantity(item.qty_pending)}</span>
@@ -613,8 +617,10 @@ function ItemRowView({
           ) : null}
         </div>
 
-        {/* Ações: visíveis no toque, reveladas no hover em telas grandes */}
-        <div className="flex shrink-0 items-center gap-0.5 opacity-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+        {/* Ações: sempre visíveis no toque; com mouse, em tela grande,
+            aparecem ao passar o cursor. A condição é ter mouse, não ser largo
+            — num tablet deitado (lg) elas ficavam invisíveis e sem hover. */}
+        <div className="-mr-2 flex shrink-0 items-center justify-end gap-0.5 max-sm:-mb-1 max-sm:basis-full sm:mr-0 lg:transition-opacity mouse:lg:opacity-0 mouse:lg:group-hover:opacity-100 mouse:lg:group-focus-within:opacity-100">
           {!item.is_task && !excluded ? (
             <IconAction label={`Registrar compra de ${item.name}`} onClick={onBuy}>
               <ShoppingBag className="h-4 w-4" aria-hidden />
@@ -627,7 +633,7 @@ function ItemRowView({
               rel="noreferrer noopener"
               title="Abrir link do produto"
               aria-label={`Abrir link do produto ${item.name}`}
-              className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+              className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
             >
               <ExternalLink className="h-4 w-4" aria-hidden />
             </a>
@@ -667,7 +673,7 @@ function IconAction({
       onClick={onClick}
       title={label}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+      className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
     >
       {children}
     </button>

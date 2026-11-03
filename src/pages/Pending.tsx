@@ -1,5 +1,15 @@
 import { useMemo, useState } from 'react';
-import { ClipboardList, FileDown, ListChecks, Search, ShoppingBag, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ClipboardList,
+  FileDown,
+  ListChecks,
+  Search,
+  ShoppingBag,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
+import clsx from 'clsx';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Button, Card, Chip, EmptyState, Notice } from '@/components/ui/primitives';
 import { Checkbox, Input, SegmentedControl, Select } from '@/components/ui/form';
@@ -11,7 +21,7 @@ import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
 import { itemProgress } from '@/lib/calc';
 import { exportPending, exportSelectedList } from '@/lib/export-actions';
-import { integer, money, percentPoints, plural, quantity } from '@/lib/format';
+import { integer, money, percentPoints, plural, quantity, unitFor } from '@/lib/format';
 import { PRIORITY_CHIP, STATUS_CHIP, STATUS_FILL } from '@/lib/viz';
 import { PRIORITY_LABEL, PRIORITY_ORDER, STATUS_SHORT } from '@/types/database';
 import type { Item, Priority } from '@/types/database';
@@ -25,6 +35,10 @@ export function Pending() {
   const [categoryId, setCategoryId] = useState('todas');
   const [priority, setPriority] = useState<Priority | 'todas'>('todas');
   const [scope, setScope] = useState<'produtos' | 'tarefas'>('produtos');
+  // No celular categoria e prioridade ficam atrás de um botão, como no
+  // Checklist: a busca e o seletor produtos/tarefas bastam no dia a dia.
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const hiddenFilters = (categoryId !== 'todas' ? 1 : 0) + (priority !== 'todas' ? 1 : 0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const [exporting, setExporting] = useState<string | null>(null);
@@ -200,23 +214,49 @@ export function Pending() {
             <label className="label" htmlFor="p-busca">
               Buscar
             </label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
-                aria-hidden
-              />
-              <Input
-                id="p-busca"
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Nome ou subcategoria"
-                className="pl-10"
-              />
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+                  aria-hidden
+                />
+                <Input
+                  id="p-busca"
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Nome ou subcategoria"
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="secondary"
+                className="h-auto shrink-0 self-stretch sm:hidden"
+                aria-expanded={filtersOpen}
+                aria-controls="filtros-pendentes"
+                onClick={() => setFiltersOpen((open) => !open)}
+              >
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                <span className="max-[380px]:sr-only">Filtros</span>
+                {hiddenFilters > 0 ? (
+                  <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-olive-600 px-1 text-[0.6875rem] font-semibold text-cream-50">
+                    {hiddenFilters}
+                    <span className="sr-only"> ativos</span>
+                  </span>
+                ) : null}
+                <ChevronDown
+                  className={clsx('h-4 w-4 transition-transform', filtersOpen && 'rotate-180')}
+                  aria-hidden
+                />
+              </Button>
             </div>
           </div>
 
-          <div className="min-w-[11rem]">
+          <div
+            id="filtros-pendentes"
+            className={clsx('contents', !filtersOpen && 'max-sm:hidden')}
+          >
+          <div className="min-w-[11rem] max-sm:flex-1">
             <label className="label" htmlFor="p-categoria">
               Categoria
             </label>
@@ -234,7 +274,7 @@ export function Pending() {
             </Select>
           </div>
 
-          <div className="min-w-[9rem]">
+          <div className="min-w-[9rem] max-sm:flex-1">
             <label className="label" htmlFor="p-prioridade">
               Prioridade
             </label>
@@ -250,6 +290,7 @@ export function Pending() {
                 </option>
               ))}
             </Select>
+          </div>
           </div>
 
           <SegmentedControl
@@ -367,7 +408,7 @@ export function Pending() {
                             <button
                               type="button"
                               onClick={() => setDetail(item)}
-                              className="min-w-0 text-left text-[0.9375rem] font-medium leading-snug text-ink transition hover:text-olive-700"
+                              className="min-w-0 text-left text-[0.9375rem] font-medium leading-snug text-ink transition hover:text-olive-700 touch:-my-2.5 touch:min-w-10 touch:py-2.5"
                             >
                               {item.name}
                             </button>
@@ -384,7 +425,7 @@ export function Pending() {
                               <div className="mt-1 flex flex-wrap items-center gap-x-3 text-[0.8125rem] text-ink-muted">
                                 <span className="tnum">
                                   falta {quantity(item.qty_pending)} de{' '}
-                                  {quantity(item.qty_needed)} {item.unit}
+                                  {quantity(item.qty_needed)} {unitFor(Number(item.qty_needed), item.unit)}
                                 </span>
                                 <span className="tnum">
                                   {Number(item.unit_price_estimate) > 0

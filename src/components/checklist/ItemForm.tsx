@@ -264,7 +264,7 @@ export function ItemForm({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <Field
             label="Quantidade necessária"
             htmlFor="item-qtd"
@@ -296,6 +296,7 @@ export function ItemForm({
           </Field>
 
           <Field
+            className="col-span-2 sm:col-span-1"
             label="Preço estimado unitário"
             htmlFor="item-preco"
             error={errors.unitPrice}

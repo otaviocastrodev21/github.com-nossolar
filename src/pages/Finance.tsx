@@ -352,7 +352,7 @@ export function Finance() {
                       title={`Definir orçamento de ${row.name}`}
                       aria-label={`Definir orçamento de ${row.name}`}
                       onClick={() => setBudgetModal({ kind: 'categoria', categoryId: row.categoryId })}
-                      className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                      className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                     >
                       <Pencil className="h-4 w-4" aria-hidden />
                     </button>
@@ -362,7 +362,7 @@ export function Finance() {
                         title={`Remover orçamento de ${row.name}`}
                         aria-label={`Remover orçamento de ${row.name}`}
                         onClick={() => setConfirmDeleteBudget(budgetRow.id)}
-                        className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                        className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                       >
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </button>
@@ -390,14 +390,16 @@ export function Finance() {
             />
           ) : (
             <div className="scroll-x">
-              <table className="w-full min-w-[34rem] text-[0.875rem]">
+              {/* No celular a coluna "Parcela" some e o "3/10" vai para baixo do
+                  nome: três colunas cabem em 360px sem rolar de lado. */}
+              <table className="w-full text-[0.875rem] sm:min-w-[34rem]">
                 <caption className="sr-only">Parcelas em aberto</caption>
                 <thead>
                   <tr className="border-b border-cream-400 text-left text-[0.75rem] uppercase tracking-wide text-ink-muted">
-                    <th scope="col" className="px-5 py-3 font-semibold">Compra</th>
-                    <th scope="col" className="px-3 py-3 font-semibold">Parcela</th>
+                    <th scope="col" className="px-4 py-3 font-semibold sm:px-5">Compra</th>
+                    <th scope="col" className="px-3 py-3 font-semibold max-sm:hidden">Parcela</th>
                     <th scope="col" className="px-3 py-3 text-right font-semibold">Valor</th>
-                    <th scope="col" className="px-5 py-3 font-semibold">Vencimento</th>
+                    <th scope="col" className="px-4 py-3 font-semibold sm:px-5">Vencimento</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -410,27 +412,30 @@ export function Finance() {
                         key={installment.id}
                         className="border-b border-cream-300/80 last:border-0"
                       >
-                        <td className="px-5 py-3 text-ink">
+                        <td className="px-4 py-3 text-ink sm:px-5">
                           {purchase?.description ?? 'Compra'}
                           {purchase?.category_id ? (
                             <span className="block text-[0.8125rem] text-ink-muted">
                               {categoryById.get(purchase.category_id)?.name}
                             </span>
                           ) : null}
+                          <span className="tnum block text-[0.8125rem] text-ink-muted sm:hidden">
+                            parcela {installment.number}/{purchase?.installments ?? '?'}
+                          </span>
                         </td>
-                        <td className="tnum px-3 py-3 text-ink-secondary">
+                        <td className="tnum px-3 py-3 text-ink-secondary max-sm:hidden">
                           {installment.number}/{purchase?.installments ?? '?'}
                         </td>
                         <td className="tnum px-3 py-3 text-right font-medium text-ink">
                           {money(installment.amount)}
                         </td>
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3 sm:px-5">
                           <span className="tnum text-ink-secondary">
                             {dateBR(installment.due_date)}
                           </span>
                           {overdue ? (
                             <Chip
-                              className="ml-2 border-status-critical/40 bg-[#FDF0F0] text-ink"
+                              className="border-status-critical/40 bg-[#FDF0F0] text-ink max-sm:mt-1 max-sm:flex max-sm:w-fit sm:ml-2"
                               icon={
                                 <CircleAlert
                                   className="h-3 w-3"
@@ -478,16 +483,18 @@ export function Finance() {
             />
           ) : (
             <div className="scroll-x">
-              <table className="w-full min-w-[42rem] text-[0.875rem]">
+              {/* Abaixo de md, tipo, categoria, data e responsável saem das
+                  colunas e aparecem sob a descrição. */}
+              <table className="w-full text-[0.875rem] md:min-w-[42rem]">
                 <caption className="sr-only">Despesas adicionais</caption>
                 <thead>
                   <tr className="border-b border-cream-400 text-left text-[0.75rem] uppercase tracking-wide text-ink-muted">
-                    <th scope="col" className="px-5 py-3 font-semibold">Descrição</th>
-                    <th scope="col" className="px-3 py-3 font-semibold">Tipo</th>
-                    <th scope="col" className="px-3 py-3 font-semibold">Categoria</th>
+                    <th scope="col" className="px-4 py-3 font-semibold sm:px-5">Descrição</th>
+                    <th scope="col" className="px-3 py-3 font-semibold max-md:hidden">Tipo</th>
+                    <th scope="col" className="px-3 py-3 font-semibold max-md:hidden">Categoria</th>
                     <th scope="col" className="px-3 py-3 text-right font-semibold">Valor</th>
-                    <th scope="col" className="px-3 py-3 font-semibold">Data</th>
-                    <th scope="col" className="px-3 py-3 font-semibold">Responsável</th>
+                    <th scope="col" className="px-3 py-3 font-semibold max-md:hidden">Data</th>
+                    <th scope="col" className="px-3 py-3 font-semibold max-md:hidden">Responsável</th>
                     <th scope="col" className="px-5 py-3 text-right font-semibold">
                       <span className="sr-only">Ações</span>
                     </th>
@@ -496,18 +503,27 @@ export function Finance() {
                 <tbody>
                   {extraExpenses.map((expense) => (
                     <tr key={expense.id} className="border-b border-cream-300/80 last:border-0">
-                      <td className="px-5 py-3 text-ink">
+                      <td className="px-4 py-3 text-ink sm:px-5">
                         {expense.description}
                         {expense.notes ? (
                           <span className="block text-[0.8125rem] italic text-ink-muted">
                             {expense.notes}
                           </span>
                         ) : null}
+                        <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.8125rem] text-ink-muted md:hidden">
+                          <Chip>{EXTRA_KIND_LABEL[expense.kind]}</Chip>
+                          {expense.category_id ? (
+                            <span>{categoryById.get(expense.category_id)?.name ?? '—'}</span>
+                          ) : null}
+                          <span className="tnum whitespace-nowrap">
+                            {dateBR(expense.spent_at)} · {memberName(expense.buyer_id)}
+                          </span>
+                        </span>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 max-md:hidden">
                         <Chip>{EXTRA_KIND_LABEL[expense.kind]}</Chip>
                       </td>
-                      <td className="px-3 py-3 text-ink-secondary">
+                      <td className="px-3 py-3 text-ink-secondary max-md:hidden">
                         {expense.category_id
                           ? (categoryById.get(expense.category_id)?.name ?? '—')
                           : '—'}
@@ -515,20 +531,20 @@ export function Finance() {
                       <td className="tnum px-3 py-3 text-right font-medium text-ink">
                         {money(expense.amount)}
                       </td>
-                      <td className="tnum px-3 py-3 text-ink-secondary">
+                      <td className="tnum px-3 py-3 text-ink-secondary max-md:hidden">
                         {dateBR(expense.spent_at)}
                       </td>
-                      <td className="px-3 py-3 text-ink-secondary">
+                      <td className="px-3 py-3 text-ink-secondary max-md:hidden">
                         {memberName(expense.buyer_id)}
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="flex justify-end gap-0.5">
+                      <td className="px-4 py-3 sm:px-5">
+                        <div className="-mr-2 flex justify-end gap-0.5 sm:mr-0">
                           <button
                             type="button"
                             title="Editar despesa"
                             aria-label={`Editar despesa ${expense.description}`}
                             onClick={() => setExtraModal(expense)}
-                            className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                            className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </button>
@@ -537,7 +553,7 @@ export function Finance() {
                             title="Excluir despesa"
                             aria-label={`Excluir despesa ${expense.description}`}
                             onClick={() => setConfirmDeleteExtra(expense)}
-                            className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                            className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                           >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </button>
@@ -548,13 +564,17 @@ export function Finance() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-cream-400 bg-cream-200/60">
-                    <th scope="row" colSpan={3} className="px-5 py-3 text-left font-semibold text-ink">
+                    <th scope="row" colSpan={3} className="px-5 py-3 text-left font-semibold text-ink max-md:hidden">
+                      Total
+                    </th>
+                    <th scope="row" className="px-4 py-3 text-left font-semibold text-ink sm:px-5 md:hidden">
                       Total
                     </th>
                     <td className="tnum px-3 py-3 text-right font-semibold text-ink">
                       {money(overview.extrasSpent)}
                     </td>
-                    <td colSpan={3} />
+                    <td colSpan={3} className="max-md:hidden" />
+                    <td className="md:hidden" />
                   </tr>
                 </tfoot>
               </table>
@@ -921,7 +941,7 @@ function ExtraExpenseModal({
           />
         </Field>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
           <Field label="Tipo" htmlFor="d-tipo">
             <Select
               id="d-tipo"
@@ -947,7 +967,13 @@ function ExtraExpenseModal({
             />
           </Field>
 
-          <Field label="Data" htmlFor="d-data" required error={errors.spentAt}>
+          <Field
+            label="Data"
+            htmlFor="d-data"
+            required
+            error={errors.spentAt}
+            className="col-span-2 sm:col-span-1"
+          >
             <Input
               id="d-data"
               type="date"

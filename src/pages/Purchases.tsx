@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
+  ChevronDown,
   CreditCard,
   ExternalLink,
   FileDown,
@@ -8,9 +9,11 @@ import {
   Receipt,
   Search,
   ShoppingBag,
+  SlidersHorizontal,
   Trash2,
   X,
 } from 'lucide-react';
+import clsx from 'clsx';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Button, Card, Chip, EmptyState } from '@/components/ui/primitives';
 import { Input, Select } from '@/components/ui/form';
@@ -20,7 +23,7 @@ import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
 import { purchaseFinance } from '@/lib/calc';
-import { cents, dateBR, integer, money, plural, quantity } from '@/lib/format';
+import { cents, dateBR, integer, money, plural, quantity, unitFor } from '@/lib/format';
 import { exportPurchases } from '@/lib/export-actions';
 import { PAYMENT_LABEL } from '@/types/database';
 import type { Purchase } from '@/types/database';
@@ -46,6 +49,9 @@ export function Purchases() {
   const [store, setStore] = useState('todas');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  // Abaixo de lg, só a busca fica à mostra: seis campos empilhados ocupavam
+  // tela e meia antes da primeira compra aparecer.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Purchase | null>(null);
@@ -110,6 +116,9 @@ export function Purchases() {
     (store !== 'todas' ? 1 : 0) +
     (from ? 1 : 0) +
     (to ? 1 : 0);
+
+  /** Filtros escondidos atrás do botão — a busca já está à vista. */
+  const hiddenFilters = activeFilters - (search ? 1 : 0);
 
   const clearFilters = () => {
     setSearch('');
@@ -212,26 +221,52 @@ export function Purchases() {
       {/* ── Filtros ── */}
       <Card className="mb-5 p-4 sm:p-5">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="xl:col-span-2">
+          {/* Até lg a busca divide a linha só com o botão de filtros. */}
+          <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
             <label className="label" htmlFor="c-busca">
               Buscar
             </label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
-                aria-hidden
-              />
-              <Input
-                id="c-busca"
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Item, loja ou observação"
-                className="pl-10"
-              />
+            <div className="flex gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+                  aria-hidden
+                />
+                <Input
+                  id="c-busca"
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Item, loja ou observação"
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="secondary"
+                className="h-auto shrink-0 self-stretch lg:hidden"
+                aria-expanded={filtersOpen}
+                aria-controls="filtros-compras"
+                onClick={() => setFiltersOpen((open) => !open)}
+              >
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                <span className="max-[380px]:sr-only">Filtros</span>
+                {hiddenFilters > 0 ? (
+                  <span className="tnum grid h-5 min-w-5 place-items-center rounded-full bg-olive-600 px-1 text-[0.6875rem] font-semibold text-cream-50">
+                    {hiddenFilters}
+                    <span className="sr-only"> ativos</span>
+                  </span>
+                ) : null}
+                <ChevronDown
+                  className={clsx('h-4 w-4 transition-transform', filtersOpen && 'rotate-180')}
+                  aria-hidden
+                />
+              </Button>
             </div>
           </div>
 
+          {/* "contents": no desktop os campos seguem no mesmo grid de seis
+              colunas, como se este invólucro não existisse. */}
+          <div id="filtros-compras" className={clsx('contents', !filtersOpen && 'max-lg:hidden')}>
           <div>
             <label className="label" htmlFor="c-de">
               De
@@ -309,6 +344,7 @@ export function Purchases() {
               </Select>
             </div>
           ) : null}
+          </div>
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -358,7 +394,120 @@ export function Purchases() {
           />
         </Card>
       ) : (
-        <Card>
+        <>
+        {/* Até xl, cartões: a tabela pede 896px, mais do que um tablet deitado
+            oferece ao lado do menu. Os números são os mesmos da tabela. */}
+        <Card className="xl:hidden">
+          <ul className="divide-y divide-cream-300/80" aria-label="Histórico de compras">
+            {filtered.map((purchase) => {
+              const finance = purchaseFinance(purchase, installments);
+              const item = purchase.item_id ? itemById.get(purchase.item_id) : null;
+              const category = purchase.category_id ? categoryById.get(purchase.category_id) : null;
+              const unitPaid = Number(purchase.qty) > 0 ? cents(purchase.total_paid / purchase.qty) : 0;
+              const title = purchase.description || item?.name || 'Compra';
+
+              return (
+                <li key={purchase.id} className="px-4 py-3.5 sm:px-5">
+                  <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium leading-snug text-ink">{title}</p>
+                      <p className="mt-0.5 text-[0.8125rem] text-ink-muted">
+                        {category ? category.name : 'Sem categoria'}
+                        {purchase.store ? ` · ${purchase.store}` : ''}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="tnum font-semibold text-ink">{money(finance.total)}</p>
+                      <p className="tnum text-[0.75rem] text-ink-muted">
+                        {finance.open > 0 ? `${money(finance.open)} a vencer` : 'tudo pago'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="tnum mt-1.5 text-[0.8125rem] text-ink-secondary">
+                    {quantity(purchase.qty)} {item ? unitFor(Number(purchase.qty), item.unit) : 'un.'} ×{' '}
+                    {money(unitPaid)}
+                    {purchase.discount > 0 ? ` · −${money(purchase.discount)} desconto` : ''}
+                    {purchase.shipping > 0 ? ` · +${money(purchase.shipping)} frete` : ''}
+                  </p>
+
+                  {purchase.notes ? (
+                    <p className="mt-1 text-[0.8125rem] italic text-ink-secondary">{purchase.notes}</p>
+                  ) : null}
+
+                  <div className="mt-2 flex items-end gap-2">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1.5 text-[0.8125rem] text-ink-muted">
+                    <Chip>{PAYMENT_LABEL[purchase.payment_method]}</Chip>
+                    {purchase.installments > 1 ? (
+                      <Chip
+                        icon={<CreditCard className="h-3 w-3" aria-hidden />}
+                        title={`${purchase.installments_paid} de ${purchase.installments} parcelas pagas`}
+                      >
+                        {purchase.installments_paid}/{purchase.installments}×
+                      </Chip>
+                    ) : null}
+                    <span className="tnum whitespace-nowrap">
+                      {dateBR(purchase.purchased_at)} · {memberName(purchase.buyer_id)}
+                    </span>
+                    {purchase.product_url ? (
+                      <a
+                        href={purchase.product_url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-0.5 text-olive-700 underline decoration-olive-300 underline-offset-2"
+                      >
+                        produto
+                        <ExternalLink className="h-3 w-3" aria-hidden />
+                      </a>
+                    ) : null}
+                  </div>
+
+                    <span className="-my-1 -mr-2 flex shrink-0 gap-0.5">
+                      <button
+                        type="button"
+                        title="Editar compra"
+                        aria-label={`Editar compra ${title}`}
+                        onClick={() => {
+                          setEditing(purchase);
+                          setFormOpen(true);
+                        }}
+                        className="grid h-10 w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                      >
+                        <Pencil className="h-4 w-4" aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        title="Excluir compra"
+                        aria-label={`Excluir compra ${title}`}
+                        onClick={() => setConfirmDelete(purchase)}
+                        className="grid h-10 w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </button>
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          <dl className="grid grid-cols-3 gap-2 border-t border-cream-400 bg-cream-200/60 px-4 py-3 text-[0.75rem] sm:px-5">
+            <div>
+              <dt className="text-ink-muted">Contratado</dt>
+              <dd className="tnum text-[0.875rem] font-semibold text-ink">{money(totals.contracted)}</dd>
+            </div>
+            <div>
+              <dt className="text-ink-muted">Pago</dt>
+              <dd className="tnum text-[0.875rem] font-semibold text-ink">{money(totals.paid)}</dd>
+            </div>
+            <div>
+              <dt className="text-ink-muted">A vencer</dt>
+              <dd className="tnum text-[0.875rem] font-semibold text-ink">{money(totals.open)}</dd>
+            </div>
+          </dl>
+        </Card>
+
+        <Card className="hidden xl:block">
           <div className="scroll-x">
             <table className="w-full min-w-[56rem] text-[0.875rem]">
               <caption className="sr-only">Histórico de compras</caption>
@@ -431,7 +580,9 @@ export function Purchases() {
                       <td className="tnum px-3 py-3 text-right text-ink">
                         {quantity(purchase.qty)}
                         {item ? (
-                          <span className="block text-[0.75rem] text-ink-muted">{item.unit}</span>
+                          <span className="block text-[0.75rem] text-ink-muted">
+                            {unitFor(Number(purchase.qty), item.unit)}
+                          </span>
                         ) : null}
                       </td>
                       <td className="tnum px-3 py-3 text-right text-ink-secondary">
@@ -466,7 +617,7 @@ export function Purchases() {
                               setEditing(purchase);
                               setFormOpen(true);
                             }}
-                            className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                            className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                           >
                             <Pencil className="h-4 w-4" aria-hidden />
                           </button>
@@ -475,7 +626,7 @@ export function Purchases() {
                             title="Excluir compra"
                             aria-label={`Excluir compra ${purchase.description}`}
                             onClick={() => setConfirmDelete(purchase)}
-                            className="grid h-9 w-9 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+                            className="grid h-9 w-9 touch:h-10 touch:w-10 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
                           >
                             <Trash2 className="h-4 w-4" aria-hidden />
                           </button>
@@ -507,6 +658,7 @@ export function Purchases() {
             </table>
           </div>
         </Card>
+        </>
       )}
 
       <PurchaseForm

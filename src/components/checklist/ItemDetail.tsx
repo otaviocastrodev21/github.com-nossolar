@@ -15,7 +15,7 @@ import { Button, Chip, EmptyState, Notice } from '@/components/ui/primitives';
 import { Meter } from '@/components/dashboard/figures';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
-import { dateBR, money, percentPoints, quantity } from '@/lib/format';
+import { dateBR, money, percentPoints, quantity, unitFor } from '@/lib/format';
 import { itemProgress, purchaseFinance } from '@/lib/calc';
 import { PRIORITY_CHIP, STATUS_CHIP, STATUS_FILL } from '@/lib/viz';
 import { PAYMENT_LABEL, PRIORITY_LABEL, STATUS_LABEL } from '@/types/database';
@@ -138,7 +138,8 @@ export function ItemDetail({
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="text-[0.9375rem] font-semibold text-ink">Progresso</h3>
                 <span className="tnum text-[0.875rem] text-ink-secondary">
-                  {quantity(progress.bought)} de {quantity(progress.needed)} {item.unit} ·{' '}
+                  {quantity(progress.bought)} de {quantity(progress.needed)}{' '}
+                  {unitFor(Number(progress.needed), item.unit)} ·{' '}
                   {percentPoints(progress.ratio * 100)}
                 </span>
               </div>
@@ -158,13 +159,13 @@ export function ItemDetail({
               {!item.is_task ? (
                 <>
                   <Row label="Quantidade necessária">
-                    {quantity(item.qty_needed)} {item.unit}
+                    {quantity(item.qty_needed)} {unitFor(Number(item.qty_needed), item.unit)}
                   </Row>
                   <Row label="Quantidade comprada">
-                    {quantity(item.qty_bought)} {item.unit}
+                    {quantity(item.qty_bought)} {unitFor(Number(item.qty_bought), item.unit)}
                   </Row>
                   <Row label="Quantidade pendente">
-                    {quantity(item.qty_pending)} {item.unit}
+                    {quantity(item.qty_pending)} {unitFor(Number(item.qty_pending), item.unit)}
                   </Row>
                   <Row label="Preço estimado unitário">{money(item.unit_price_estimate)}</Row>
                   <Row label="Total estimado">{money(item.estimated_total)}</Row>
@@ -251,7 +252,7 @@ export function ItemDetail({
                     >
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                         <span className="tnum text-[0.875rem] font-medium text-ink">
-                          {quantity(purchase.qty)} {item.unit} · {money(purchase.total_paid)}
+                          {quantity(purchase.qty)} {unitFor(Number(purchase.qty), item.unit)} · {money(purchase.total_paid)}
                         </span>
                         <span className="tnum text-[0.8125rem] text-ink-muted">
                           {dateBR(purchase.purchased_at)}

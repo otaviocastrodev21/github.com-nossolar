@@ -124,7 +124,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Fechar"
-            className="-mr-1.5 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink"
+            className="-mr-1.5 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl text-ink-muted transition hover:bg-greige-100 hover:text-ink touch:h-10 touch:w-10"
           >
             <X className="h-4.5 w-4.5" aria-hidden />
           </button>
@@ -135,7 +135,9 @@ export function Modal({
         </div>
 
         {footer ? (
-          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-cream-400/70 bg-cream-200/60 px-5 py-4 sm:px-6">
+          // No celular os botões dividem a largura (alvo grande, ao alcance do
+          // polegar) e o rodapé sobe acima da barra de gestos do iPhone.
+          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-cream-400/70 bg-cream-200/60 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4 max-sm:[&>*]:flex-1">
             {footer}
           </footer>
         ) : null}

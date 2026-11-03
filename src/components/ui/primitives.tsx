@@ -20,7 +20,8 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 const SIZES: Record<Size, string> = {
-  sm: 'h-9 px-3 text-[0.8125rem] gap-1.5',
+  // touch:h-10 — no dedo, 40px é o mínimo confortável; com mouse, 36px basta.
+  sm: 'h-9 touch:h-10 px-3 text-[0.8125rem] gap-1.5',
   md: 'h-10 px-4 text-[0.875rem] gap-2',
   lg: 'h-12 px-5 text-[0.9375rem] gap-2',
   icon: 'h-10 w-10 p-0 gap-0',

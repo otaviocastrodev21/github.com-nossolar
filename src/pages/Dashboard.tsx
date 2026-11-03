@@ -30,15 +30,7 @@ import { CategorySpendChart, MonthlySpendChart } from '@/components/dashboard/ch
 import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
 import { nextPriorityItems, recentPurchases } from '@/lib/calc';
-import {
-  dateBR,
-  integer,
-  money,
-  monthLongBR,
-  percentPoints,
-  plural,
-  quantity,
-} from '@/lib/format';
+import { dateBR, integer, money, monthLongBR, percentPoints, plural, quantity, unitFor } from '@/lib/format';
 import { STATUS_FILL, PRIORITY_CHIP } from '@/lib/viz';
 import { PRIORITY_LABEL, STATUS_LABEL } from '@/types/database';
 
@@ -484,7 +476,7 @@ export function Dashboard() {
                       {PRIORITY_LABEL[item.priority]}
                     </Chip>
                     <span className="tnum w-full text-[0.8125rem] text-ink-muted">
-                      falta {quantity(item.qty_pending)} {item.unit}
+                      falta {quantity(item.qty_pending)} {unitFor(Number(item.qty_pending), item.unit)}
                       {Number(item.unit_price_estimate) > 0
                         ? ` · ${money(item.estimated_remaining)} estimados`
                         : ' · preço estimado não preenchido'}

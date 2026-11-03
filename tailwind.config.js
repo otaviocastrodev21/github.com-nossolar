@@ -94,5 +94,15 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // `touch:` vale onde o ponteiro é um dedo (celular, tablet), não pela
+    // largura: um notebook estreito com mouse não precisa de alvos maiores, e
+    // um tablet deitado com 1024px precisa.
+    ({ addVariant }) => {
+      addVariant('touch', '@media (pointer: coarse)');
+      // `mouse:` para o que só faz sentido com hover de verdade — revelar
+      // ações ao passar o cursor. Num tablet não há cursor para passar.
+      addVariant('mouse', '@media (hover: hover) and (pointer: fine)');
+    },
+  ],
 };

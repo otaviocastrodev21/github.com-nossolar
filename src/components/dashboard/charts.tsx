@@ -18,6 +18,7 @@ import { SegmentedControl } from '@/components/ui/form';
 import { EmptyState } from '@/components/ui/primitives';
 import { VIZ } from '@/lib/viz';
 import { integer, money, moneyCompact, monthShortBR } from '@/lib/format';
+import { useIsPhone } from '@/lib/media';
 import type { CategoryBreakdown, MonthBreakdown } from '@/lib/calc';
 
 /* ═════════════════════════ Invólucro com visão em tabela ══════════════════
@@ -150,6 +151,14 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
   const total = data.reduce((acc, row) => acc + row.spent, 0);
   // A altura cresce com o número de linhas e inclui a faixa do eixo X.
   const height = Math.max(data.length * 40 + 44, 180);
+  // No celular o eixo de nomes encolhe e o nome longo é abreviado — o nome
+  // inteiro continua no tooltip e na visão de tabela. Antes o gráfico pedia
+  // 420px e rolava de lado numa tela de 360.
+  const phone = useIsPhone();
+  // 116px e no máximo 14 caracteres cabem numa linha a 11,5px; mais que
+  // isso o Recharts quebra o rótulo em duas ("Quarto do / casal").
+  const nameAxis = phone ? 116 : 150;
+  const abreviar = (nome: string) => (phone && nome.length > 14 ? `${nome.slice(0, 12).trimEnd()}…` : nome);
 
   return (
     <ChartCard
@@ -165,13 +174,13 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
         ) : undefined
       }
       chart={
-        <div className="scroll-x">
-          <div style={{ minWidth: 420 }}>
+        <div className="scroll-x scroll-x-bleed">
+          <div>
             <ResponsiveContainer width="100%" height={height}>
               <BarChart
                 layout="vertical"
                 data={data}
-                margin={{ top: 4, right: 76, bottom: 8, left: 4 }}
+                margin={{ top: 4, right: phone ? 60 : 76, bottom: 8, left: 4 }}
                 barCategoryGap={10}
               >
                 <CartesianGrid horizontal={false} stroke={VIZ.hairline} />
@@ -184,7 +193,8 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
                 <YAxis
                   type="category"
                   dataKey="name"
-                  width={150}
+                  width={nameAxis}
+                  tickFormatter={abreviar}
                   axisLine={false}
                   tickLine={false}
                   interval={0}
@@ -232,7 +242,7 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
         </div>
       }
       table={
-        <div className="scroll-x">
+        <div className="scroll-x scroll-x-bleed">
           <table className="w-full min-w-[420px] text-[0.875rem]">
             <caption className="sr-only">Despesas por categoria</caption>
             <thead>
@@ -282,6 +292,7 @@ export function MonthlySpendChart({
   rows: MonthBreakdown[];
   monthlyGoal: number | null;
 }) {
+  const phone = useIsPhone();
   const data = useMemo(
     () =>
       rows
@@ -309,8 +320,13 @@ export function MonthlySpendChart({
         ) : undefined
       }
       chart={
-        <div className="scroll-x">
-          <div style={{ minWidth: Math.max(data.length * 72, 380) }}>
+        <div className="scroll-x scroll-x-bleed">
+          {/* A série cabe inteira na largura: o Recharts omite os rótulos que
+              colidiriam e o tooltip mostra cada mês. Rolar de lado escondia
+              meses sem nenhum indício de que existiam — com as parcelas
+              futuras, um ano inteiro sumia à direita. Só uma série muito
+              longa (mais de 18 meses) ganha largura mínima e rola. */}
+          <div style={{ minWidth: data.length > 18 ? data.length * 40 : undefined }}>
             <ResponsiveContainer width="100%" height={264}>
               <AreaChart data={data} margin={{ top: 20, right: 20, bottom: 8, left: 4 }}>
                 <CartesianGrid vertical={false} stroke={VIZ.hairline} />
@@ -318,13 +334,22 @@ export function MonthlySpendChart({
                   dataKey="label"
                   axisLine={{ stroke: VIZ.hairline }}
                   tickLine={false}
+                  // Sem recuo o último mês ficava colado na borda e o rótulo,
+                  // centrado nele, saía cortado ("de…" em vez de "dez/2026").
+                  padding={{ left: 18, right: 18 }}
+                  interval="preserveStartEnd"
+                  minTickGap={phone ? 10 : 6}
+                  tickFormatter={(label: string) =>
+                    phone ? label.replace(/\/\d{2}(\d{2})$/, '/$1') : label
+                  }
                   tick={{ fontSize: 11.5, fill: VIZ.textMuted }}
                 />
                 <YAxis
                   tickFormatter={(value: number) => moneyCompact(value)}
                   axisLine={false}
                   tickLine={false}
-                  width={64}
+                  // 64px quebrava "R$ 4,5 mil" em duas linhas.
+                  width={72}
                   tick={{ fontSize: 11.5, fill: VIZ.textMuted }}
                 />
                 <Tooltip
@@ -393,7 +418,7 @@ export function MonthlySpendChart({
         </div>
       }
       table={
-        <div className="scroll-x">
+        <div className="scroll-x scroll-x-bleed">
           <table className="w-full min-w-[420px] text-[0.875rem]">
             <caption className="sr-only">Gastos por mês</caption>
             <thead>

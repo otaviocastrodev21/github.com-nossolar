@@ -246,7 +246,11 @@ export function Reports() {
                 <caption className="sr-only">Resumo financeiro por categoria</caption>
                 <thead>
                   <tr className="border-b border-cream-400 text-left text-[0.75rem] uppercase tracking-wide text-ink-muted">
-                    <th scope="col" className="px-5 py-3 font-semibold">Categoria</th>
+                    {/* A categoria fica parada enquanto os números rolam: é uma
+                        tabela de comparação, cartões destruiriam a leitura cruzada. */}
+                    <th scope="col" className="sticky left-0 z-[1] max-sm:w-[10rem] max-sm:min-w-[10rem] bg-cream-100 px-4 py-3 font-semibold sm:px-5">
+                      Categoria
+                    </th>
                     <th scope="col" className="px-3 py-3 text-right font-semibold">Itens</th>
                     <th scope="col" className="px-3 py-3 text-right font-semibold">Conclusão</th>
                     <th scope="col" className="px-3 py-3 text-right font-semibold">Orçamento</th>
@@ -259,7 +263,7 @@ export function Reports() {
                 <tbody>
                   {overview.byCategory.map((row) => (
                     <tr key={row.categoryId} className="border-b border-cream-300/80 last:border-0">
-                      <td className="px-5 py-2.5 text-ink">
+                      <td className="sticky left-0 z-[1] max-sm:w-[10rem] max-sm:min-w-[10rem] bg-cream-100 px-4 py-2.5 text-ink sm:px-5">
                         <span className="mr-1.5 font-semibold text-ink-muted">{row.code}</span>
                         {row.name}
                       </td>
@@ -289,7 +293,9 @@ export function Reports() {
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-cream-400 bg-cream-200/60">
-                    <th scope="row" className="px-5 py-3 text-left font-semibold text-ink">
+                    {/* #f4f2ec = o cream-200/60 da linha já composto sobre o cartão:
+                        a célula fixa precisa de fundo opaco. */}
+                    <th scope="row" className="sticky left-0 z-[1] max-sm:w-[10rem] max-sm:min-w-[10rem] bg-[#f4f2ec] px-4 py-3 text-left font-semibold text-ink sm:px-5">
                       Total
                     </th>
                     <td className="tnum px-3 py-3 text-right text-ink">

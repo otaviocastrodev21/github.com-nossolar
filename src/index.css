@@ -50,6 +50,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* O iOS aumenta o texto sozinho ao girar o aparelho; o layout já cuida disso. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -102,7 +105,10 @@ img {
 @layer components {
   /* Cartão padrão: cantos arredondados, sombra discreta */
   .card {
-    @apply rounded-2xl border border-cream-400/70 bg-cream-100 shadow-card;
+    /* min-w-0: um cartão dentro de grid ou flex herda "min-width: auto" e
+       cresce até o conteúdo mais largo (um gráfico, uma tabela), empurrando a
+       página para o lado. Com isto ele aceita a largura que a coluna tem. */
+    @apply min-w-0 rounded-2xl border border-cream-400/70 bg-cream-100 shadow-card;
   }
 
   .card-pad {
@@ -123,6 +129,13 @@ img {
            disabled:cursor-not-allowed disabled:bg-greige-100 disabled:text-ink-muted;
   }
 
+  /* Abaixo de 16px o Safari do iPhone dá zoom na página ao focar o campo. */
+  @media (pointer: coarse) {
+    .field {
+      font-size: 16px;
+    }
+  }
+
   .field-error {
     @apply border-status-critical focus:border-status-critical focus:ring-status-critical/25;
   }
@@ -138,8 +151,19 @@ img {
 
   /* Faixa de rolagem horizontal para tabelas e gráficos largos */
   .scroll-x {
-    @apply -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0;
+    /* relative: sem ele, um filho "absolute" (o .sr-only de um cabeçalho de
+       coluna, por exemplo) se ancora fora da faixa, escapa do recorte e
+       alarga a página inteira — foi o que fazia Compras rolar de lado. */
+    @apply relative overflow-x-auto;
     scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Dentro de um .card-pad, a faixa encosta nas bordas do cartão no celular.
+     O recuo tem de ser igual ao padding; por isso é opt-in, e não o padrão —
+     fora de um .card-pad ele empurrava a página 4px para fora da tela. */
+  .scroll-x-bleed {
+    @apply -mx-5 px-5 sm:mx-0 sm:px-0;
   }
 }
 
