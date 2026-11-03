@@ -15,6 +15,7 @@ import { Button, Card, Chip, EmptyState, Notice } from '@/components/ui/primitiv
 import { Checkbox, Input, SegmentedControl, Select } from '@/components/ui/form';
 import { Meter, StatTile } from '@/components/dashboard/figures';
 import { ItemDetail } from '@/components/checklist/ItemDetail';
+import { QuoteBadge } from '@/components/checklist/QuoteComparison';
 import { ItemForm } from '@/components/checklist/ItemForm';
 import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
@@ -432,6 +433,7 @@ export function Pending() {
                                     ? `${money(item.estimated_remaining)} estimados`
                                     : 'preço estimado em branco'}
                                 </span>
+                                <QuoteBadge itemId={item.id} />
                               </div>
                               <Meter
                                 ratio={progress.ratio}

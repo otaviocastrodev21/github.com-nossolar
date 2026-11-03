@@ -13,6 +13,7 @@ import {
 import { Modal, ConfirmDialog } from '@/components/ui/Modal';
 import { Button, Chip, EmptyState, Notice } from '@/components/ui/primitives';
 import { Meter } from '@/components/dashboard/figures';
+import { QuoteComparison } from './QuoteComparison';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
 import { dateBR, money, percentPoints, quantity, unitFor } from '@/lib/format';
@@ -22,7 +23,7 @@ import { PAYMENT_LABEL, PRIORITY_LABEL, STATUS_LABEL } from '@/types/database';
 import type { Item } from '@/types/database';
 
 export function ItemDetail({
-  item,
+  item: itemAberto,
   onClose,
   onEdit,
   onRegisterPurchase,
@@ -43,7 +44,13 @@ export function ItemDetail({
     deleteItem,
     duplicateItem,
     deletePurchase,
+    itemById,
   } = useSpace();
+  // A tela que abriu o detalhe guarda o item do momento do clique. Lido de
+  // novo a cada renderização, o detalhe acompanha o que muda enquanto está
+  // aberto — uma compra, o preço estimado vindo de uma cotação, ou o par
+  // editando em outro aparelho.
+  const item = itemAberto ? (itemById.get(itemAberto.id) ?? itemAberto) : null;
   const toast = useToast();
 
   const [confirmDeleteItem, setConfirmDeleteItem] = useState(false);
@@ -198,6 +205,9 @@ export function ItemDetail({
               ) : null}
             </dl>
           </section>
+
+          {/* ── Comparativo de preços ── */}
+          {!item.is_task ? <QuoteComparison item={item} /> : null}
 
           {/* ── Tarefa ── */}
           {item.is_task ? (

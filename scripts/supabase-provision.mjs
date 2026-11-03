@@ -355,6 +355,7 @@ const MIGRACOES = [
   ['0004_catalog_seed.sql', 'lista inicial do enxoval'],
   ['0005_ensure_space.sql', 'o espaço do primeiro uso, criado sozinho e só uma vez'],
   ['0006_account_profile_sync.sql', 'e-mail e nome do perfil acompanham a conta'],
+  ['0007_item_quotes.sql', 'comparativo de preços: cotações por item'],
 ];
 
 async function migrar(ref) {

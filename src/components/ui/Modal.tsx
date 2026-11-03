@@ -139,7 +139,7 @@ export function Modal({
         {footer ? (
           // No celular os botões dividem a largura (alvo grande, ao alcance do
           // polegar) e o rodapé sobe acima da barra de gestos do iPhone.
-          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-cream-400/70 bg-cream-200/60 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4 max-sm:[&>*]:flex-1">
+          <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-cream-400/70 bg-cream-200/60 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4 max-sm:[&>*]:flex-auto">
             {footer}
           </footer>
         ) : null}

@@ -22,6 +22,7 @@ import { ConfirmDialog } from '@/components/ui/Modal';
 import { Meter } from '@/components/dashboard/figures';
 import { ItemForm } from '@/components/checklist/ItemForm';
 import { ItemDetail } from '@/components/checklist/ItemDetail';
+import { QuoteBadge } from '@/components/checklist/QuoteComparison';
 import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -596,6 +597,7 @@ function ItemRowView({
                 {Number(item.total_spent) > 0 ? (
                   <span className="tnum">gasto {money(item.total_spent)}</span>
                 ) : null}
+                <QuoteBadge itemId={item.id} />
                 {progress.overEstimate ? (
                   <span className="tnum font-medium text-ink">
                     {money(Math.abs(progress.savings))} acima do estimado
@@ -766,6 +768,8 @@ function ItemCardView({
           {item.task_done ? 'Verificada' : 'Pendente de verificação'}
         </p>
       )}
+
+      {!item.is_task ? <QuoteBadge itemId={item.id} className="self-start" /> : null}
 
       <div className="mt-auto flex gap-2 pt-1">
         {!item.is_task && !excluded ? (

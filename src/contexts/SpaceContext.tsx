@@ -20,6 +20,8 @@ import type {
   ExtraExpense,
   Installment,
   Item,
+  ItemQuote,
+  ItemQuoteWritable,
   ItemWritable,
   Payment,
   Profile,
@@ -58,6 +60,7 @@ export interface SpaceData {
   payments: Payment[];
   budgets: Budget[];
   extraExpenses: ExtraExpense[];
+  quotes: ItemQuote[];
   members: SpaceMember[];
   codes: SpaceCode[];
   activity: ActivityEntry[];
@@ -71,6 +74,7 @@ const EMPTY_DATA: SpaceData = {
   payments: [],
   budgets: [],
   extraExpenses: [],
+  quotes: [],
   members: [],
   codes: [],
   activity: [],
@@ -89,6 +93,8 @@ interface SpaceValue extends SpaceData {
   /** mapa de categoria por id, para lookups rápidos */
   categoryById: Map<string, Category>;
   itemById: Map<string, Item>;
+  /** cotações de cada item, da mais barata (preço + frete) para a mais cara */
+  quotesByItem: Map<string, ItemQuote[]>;
   memberName: (userId: string | null | undefined) => string;
   isOwner: boolean;
   /** Espaço recém-nascido em que ninguém digitou nada ainda. */
@@ -133,6 +139,10 @@ interface SpaceValue extends SpaceData {
   ) => Promise<void>;
   updateExtraExpense: (expenseId: string, patch: Partial<ExtraExpense>) => Promise<void>;
   deleteExtraExpense: (expenseId: string) => Promise<void>;
+
+  createQuote: (itemId: string, input: ItemQuoteWritable) => Promise<void>;
+  updateQuote: (quoteId: string, patch: Partial<ItemQuoteWritable>) => Promise<void>;
+  deleteQuote: (quoteId: string) => Promise<void>;
 }
 
 const SpaceContext = createContext<SpaceValue | null>(null);
@@ -192,6 +202,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       payments,
       budgets,
       extras,
+      quotes,
       members,
       codes,
       activity,
@@ -211,6 +222,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
         .select('*')
         .eq('space_id', spaceId)
         .order('spent_at', { ascending: false }),
+      supabase.from('item_quotes').select('*').eq('space_id', spaceId),
       supabase.from('space_members').select('*').eq('space_id', spaceId),
       supabase
         .from('space_codes')
@@ -233,6 +245,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       payments.error,
       budgets.error,
       extras.error,
+      quotes.error,
       members.error,
       codes.error,
       activity.error,
@@ -258,6 +271,11 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       payments: (payments.data ?? []) as Payment[],
       budgets: (budgets.data ?? []) as Budget[],
       extraExpenses: (extras.data ?? []) as ExtraExpense[],
+      quotes: ((quotes.data ?? []) as ItemQuote[]).map((quote) => ({
+        ...quote,
+        price: Number(quote.price),
+        shipping: Number(quote.shipping),
+      })),
       members: memberRows.map((row) => ({ ...row, profile: profileById.get(row.user_id) ?? null })),
       codes: (codes.data ?? []) as SpaceCode[],
       activity: (activity.data ?? []) as ActivityEntry[],
@@ -362,6 +380,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       'payments',
       'budgets',
       'extra_expenses',
+      'item_quotes',
       'categories',
       'space_members',
       'space_codes',
@@ -847,6 +866,52 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const quotesByItem = useMemo(() => {
+    const porItem = new Map<string, ItemQuote[]>();
+    for (const quote of data.quotes) {
+      const lista = porItem.get(quote.item_id) ?? [];
+      lista.push(quote);
+      porItem.set(quote.item_id, lista);
+    }
+    for (const lista of porItem.values()) {
+      lista.sort((a, b) => a.price + a.shipping - (b.price + b.shipping) || a.created_at.localeCompare(b.created_at));
+    }
+    return porItem;
+  }, [data.quotes]);
+
+  const createQuote = useCallback(
+    async (itemId: string, input: ItemQuoteWritable) => {
+      const spaceId = requireSpace();
+      const { error: insertError } = await supabase.from('item_quotes').insert({
+        ...input,
+        item_id: itemId,
+        space_id: spaceId,
+        created_by: user?.id ?? null,
+      });
+      if (insertError) throw new Error(friendlyError(insertError));
+      await refresh();
+    },
+    [requireSpace, refresh, user?.id],
+  );
+
+  const updateQuote = useCallback(
+    async (quoteId: string, patch: Partial<ItemQuoteWritable>) => {
+      const { error: updateError } = await supabase.from('item_quotes').update(patch).eq('id', quoteId);
+      if (updateError) throw new Error(friendlyError(updateError));
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const deleteQuote = useCallback(
+    async (quoteId: string) => {
+      const { error: deleteError } = await supabase.from('item_quotes').delete().eq('id', quoteId);
+      if (deleteError) throw new Error(friendlyError(deleteError));
+      await refresh();
+    },
+    [refresh],
+  );
+
   const value: SpaceValue = {
     ...data,
     loading,
@@ -859,6 +924,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     overview,
     categoryById,
     itemById,
+    quotesByItem,
     memberName,
     isOwner,
     refresh,
@@ -887,6 +953,9 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     createExtraExpense,
     updateExtraExpense,
     deleteExtraExpense,
+    createQuote,
+    updateQuote,
+    deleteQuote,
   };
 
   return <SpaceContext.Provider value={value}>{children}</SpaceContext.Provider>;

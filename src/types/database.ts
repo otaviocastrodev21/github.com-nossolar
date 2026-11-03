@@ -230,6 +230,23 @@ export interface ExtraExpense {
   updated_at: string;
 }
 
+/** Cotação de um item numa loja ou site. Preço final = price + shipping. */
+export interface ItemQuote {
+  id: string;
+  space_id: string;
+  item_id: string;
+  store: string;
+  price: number;
+  shipping: number;
+  url: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ItemQuoteWritable = Pick<ItemQuote, 'store' | 'price' | 'shipping' | 'url' | 'notes'>;
+
 export interface ActivityEntry {
   id: number;
   space_id: string;
