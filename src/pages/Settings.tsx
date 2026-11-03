@@ -51,7 +51,7 @@ export function Settings() {
     deleteCategory,
     setBudget,
   } = useSpace();
-  const { user, displayName, setDisplayName, disconnectDevice } = useSession();
+  const { user, displayName, setDisplayName, signOut } = useSession();
   const toast = useToast();
 
   const [spaceName, setSpaceName] = useState(space?.name ?? '');
@@ -392,8 +392,8 @@ export function Settings() {
               Código de recuperação
             </h3>
             <p className="mb-3 text-[0.875rem] leading-relaxed text-ink-secondary">
-              Sem cadastro, o acesso mora neste aparelho. Se os dados do navegador forem apagados
-              ou vocês trocarem de celular, este é o caminho de volta.{' '}
+              Um segundo caminho para o espaço, além da conta: quem entrar com ele, em qualquer
+              conta, passa a ver a lista de vocês.{' '}
               <strong className="font-medium text-ink">Anote em algum lugar seguro.</strong>
             </p>
 
@@ -424,8 +424,8 @@ export function Settings() {
               </div>
             ) : (
               <Notice tone="warning" icon={<LifeBuoy className="h-4.5 w-4.5" />}>
-                Nenhum código de recuperação ainda. Sem ele, limpar os dados do navegador significa
-                perder o acesso ao espaço.
+                Nenhum código de recuperação ainda. É opcional: a conta já leva você de volta ao
+                espaço em qualquer aparelho.
               </Notice>
             )}
 
@@ -586,7 +586,11 @@ export function Settings() {
           <CardHeader
             icon={<Users className="h-[1.125rem] w-[1.125rem]" aria-hidden />}
             title="Você"
-            subtitle="O nome que aparece ao lado de cada compra que você registra"
+            subtitle={
+              user?.email
+                ? `Conectado como ${user.email}`
+                : 'O nome que aparece ao lado de cada compra que você registra'
+            }
           />
           <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,18rem)_1fr]">
             <Field label="Seu nome" htmlFor="s-meu-nome" required>
@@ -651,12 +655,12 @@ export function Settings() {
           <div className="flex flex-col gap-5 px-5 py-5 sm:px-6">
             <div>
               <Button variant="secondary" onClick={() => setConfirmDisconnect(true)}>
-                <Smartphone className="h-4 w-4" aria-hidden />
-                Desconectar este aparelho
+                <LogOut className="h-4 w-4" aria-hidden />
+                Sair da conta
               </Button>
               <p className="mt-2 text-[0.8125rem] leading-relaxed text-ink-muted">
-                Limpa a identidade guardada aqui. Os dados do casal ficam intactos, e você volta
-                com o código de recuperação.
+                Só neste aparelho. Os dados do casal ficam intactos, e você volta entrando com o
+                seu e-mail e senha.
               </p>
             </div>
 
@@ -710,24 +714,17 @@ export function Settings() {
         open={confirmDisconnect}
         onClose={() => setConfirmDisconnect(false)}
         loading={busy === 'disconnect'}
-        title="Desconectar este aparelho"
+        title="Sair da conta"
         tone="primary"
-        confirmLabel="Desconectar"
+        confirmLabel="Sair"
         message={
-          recuperacao ? (
-            <>
-              Este aparelho vai esquecer o espaço. Para voltar, use o código de recuperação:{' '}
-              <strong className="font-mono">{recuperacao.code}</strong>. Anote antes de continuar.
-            </>
-          ) : (
-            <>
-              <strong>Você ainda não tem código de recuperação.</strong> Sem ele, desconectar
-              significa perder o acesso a este espaço para sempre. Crie um antes de continuar.
-            </>
-          )
+          <>
+            Para voltar a ver a lista neste aparelho, entre de novo com{' '}
+            <strong>{user?.email ?? 'o seu e-mail'}</strong> e a sua senha.
+          </>
         }
         onConfirm={() => {
-          void guard('disconnect', () => disconnectDevice(), 'Aparelho desconectado.').then(() =>
+          void guard('disconnect', () => signOut(), 'Você saiu da conta.').then(() =>
             setConfirmDisconnect(false),
           );
         }}

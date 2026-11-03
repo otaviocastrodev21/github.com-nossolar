@@ -4,7 +4,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -13,24 +12,24 @@ import { friendlyError, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Profile } from '@/types/database';
 
 /**
- * Sessão sem cadastro.
+ * Conta com e-mail e senha.
  *
- * Não há tela de login. No primeiro uso o aplicativo abre uma sessão anônima
- * do Supabase: este aparelho passa a ter uma identidade própria, com
- * `auth.uid()` de verdade, e todo o Row Level Security continua valendo.
+ * A mesma conta entra em qualquer aparelho — app de computador, site ou
+ * celular — e vê o mesmo espaço, sem código de pareamento.
  *
- * A sessão fica guardada no navegador. Limpar os dados do site derruba o
- * acesso — por isso o espaço oferece um código de recuperação, que é o
- * caminho de volta (ver Configurações).
+ * Aparelhos que já usavam o Nosso Lar antes do cadastro têm uma sessão
+ * anônima guardada. Ela não dá acesso às telas: a pessoa cria a conta ali
+ * mesmo e a sessão anônima *vira* a conta (`updateUser`), mantendo o mesmo
+ * id — e, com ele, o espaço e tudo o que já foi registrado.
  */
 
 interface SessionValue {
-  /** ainda decidindo se existe sessão, ou abrindo uma */
+  /** ainda lendo a sessão guardada no aparelho */
   loading: boolean;
-  /** a sessão anônima não pôde ser aberta */
-  error: string | null;
   session: Session | null;
   user: User | null;
+  /** sessão antiga, sem cadastro: precisa criar a conta (ou entrar) para continuar */
+  isAnonymous: boolean;
   profile: Profile | null;
   /** nome que a outra pessoa vê ao lado de cada compra */
   displayName: string;
@@ -38,27 +37,32 @@ interface SessionValue {
   /** a pessoa ainda não disse como quer ser chamada */
   needsName: boolean;
   refreshProfile: () => Promise<void>;
-  /** encerra a sessão deste aparelho — exige o código de recuperação para voltar */
-  disconnectDevice: () => Promise<void>;
-  retry: () => void;
+  signIn: (email: string, senha: string) => Promise<void>;
+  /** cria a conta — ou converte a sessão anônima deste aparelho, mantendo os dados */
+  signUp: (nome: string, email: string, senha: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
 
 const NOME_PADRAO = 'Participante';
 
+export const SENHA_MINIMA = 8;
+
+function validar(email: string, senha: string) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Informe um e-mail válido.');
+  if (senha.length < SENHA_MINIMA) {
+    throw new Error(`A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres.`);
+  }
+}
+
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [tentativa, setTentativa] = useState(0);
-
-  // Impede abrir duas sessões anônimas se o efeito rodar duas vezes
-  // (StrictMode em desenvolvimento faz exatamente isso).
-  const abrindo = useRef(false);
 
   const user = session?.user ?? null;
+  const isAnonymous = Boolean(user?.is_anonymous);
 
   const carregarPerfil = useCallback(async (userId: string) => {
     const { data, error: queryError } = await supabase
@@ -85,49 +89,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const preparar = async () => {
       try {
         const { data } = await supabase.auth.getSession();
+        if (!data.session) return;
 
-        if (data.session) {
-          // `getSession` apenas lê o que está guardado no aparelho; não
-          // pergunta ao servidor se a identidade ainda existe. Sem cadastro,
-          // essa identidade é a única que temos — se ela tiver desaparecido do
-          // banco, toda escrita falha por chave estrangeira e o "Tentar
-          // novamente" nunca sai do lugar. Então confirmamos antes de confiar.
-          const { error: checkError } = await supabase.auth.getUser();
-
-          // Só descarta quando o servidor nega a identidade. Um erro de rede
-          // não tem status, e NÃO pode derrubar a sessão: ficar sem internet
-          // apagaria o único acesso deste aparelho ao espaço.
-          const identidadeNegada = checkError?.status === 401 || checkError?.status === 403;
-
-          if (!identidadeNegada) {
-            if (!cancelado) setSession(data.session);
-            return;
-          }
-
-          console.warn(
-            '[Nosso Lar] A identidade guardada não vale mais; abrindo outra.',
-            checkError?.message,
-          );
+        // `getSession` só lê o aparelho. Uma conta apagada no servidor deixaria
+        // o token guardado e toda escrita falharia por chave estrangeira, então
+        // confirmamos antes. Só descarta quando o servidor nega (401/403): um
+        // erro de rede não tem status e não pode derrubar quem está sem internet.
+        const { error: checkError } = await supabase.auth.getUser();
+        if (checkError?.status === 401 || checkError?.status === 403) {
+          console.warn('[Nosso Lar] A sessão guardada não vale mais.', checkError.message);
           await supabase.auth.signOut({ scope: 'local' });
-          if (cancelado) return;
+          return;
         }
-
-        // Primeiro uso neste aparelho: abre a identidade silenciosamente.
-        if (abrindo.current) return;
-        abrindo.current = true;
-
-        const { data: nova, error: anonError } = await supabase.auth.signInAnonymously();
-        if (anonError) throw anonError;
-        if (!cancelado) setSession(nova.session);
-      } catch (caught) {
-        if (cancelado) return;
-        const mensagem = friendlyError(caught);
-        setError(
-          /anonymous/i.test(String((caught as Error)?.message ?? ''))
-            ? 'As sessões anônimas estão desativadas neste projeto Supabase. ' +
-                'Ative em Authentication → Sign In / Providers → Anonymous sign-ins.'
-            : mensagem,
-        );
+        if (!cancelado) setSession(data.session);
       } finally {
         if (!cancelado) setLoading(false);
       }
@@ -144,12 +118,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       cancelado = true;
       inscricao.subscription.unsubscribe();
     };
-  }, [tentativa]);
+  }, []);
 
+  // Pelo id e pelo e-mail, não pelo objeto: renovar o token troca o objeto a
+  // cada hora, e criar a conta muda só o e-mail.
+  const userId = user?.id;
+  const userEmail = user?.email;
   useEffect(() => {
-    if (!user) return;
-    void carregarPerfil(user.id);
-  }, [user, carregarPerfil]);
+    if (!userId) return;
+    void carregarPerfil(userId);
+  }, [userId, userEmail, carregarPerfil]);
+
+  // Só o nome: o e-mail do perfil quem grava é o banco (migração 0006), a
+  // partir da conta — o cliente nem tem permissão nessa coluna.
+  const gravarNome = useCallback(async (userId: string, nome: string) => {
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ display_name: nome, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+    if (updateError) throw new Error(friendlyError(updateError));
+  }, []);
 
   const setDisplayName = useCallback(
     async (nome: string) => {
@@ -157,16 +145,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const limpo = nome.trim();
       if (!limpo) throw new Error('Informe um nome.');
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ display_name: limpo, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
-      if (updateError) throw new Error(friendlyError(updateError));
-
+      await gravarNome(user.id, limpo);
       await supabase.auth.updateUser({ data: { display_name: limpo } });
       setProfile((atual) => (atual ? { ...atual, display_name: limpo } : atual));
     },
-    [user],
+    [user, gravarNome],
   );
 
   const refreshProfile = useCallback(async () => {
@@ -174,19 +157,62 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await carregarPerfil(user.id);
   }, [user, carregarPerfil]);
 
-  const disconnectDevice = useCallback(async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setSession(null);
-    abrindo.current = false;
-    setTentativa((n) => n + 1); // abre uma identidade nova e limpa
+  const signIn = useCallback(async (email: string, senha: string) => {
+    const limpo = email.trim().toLowerCase();
+    if (!limpo || !senha) throw new Error('Informe o e-mail e a senha.');
+
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: limpo,
+      password: senha,
+    });
+    if (authError) throw new Error(friendlyError(authError));
   }, []);
 
-  const retry = useCallback(() => {
-    setError(null);
-    setLoading(true);
-    abrindo.current = false;
-    setTentativa((n) => n + 1);
+  const signUp = useCallback(
+    async (nome: string, email: string, senha: string) => {
+      const nomeLimpo = nome.trim();
+      const emailLimpo = email.trim().toLowerCase();
+      if (!nomeLimpo) throw new Error('Diga como podemos te chamar.');
+      validar(emailLimpo, senha);
+
+      const { data: atual } = await supabase.auth.getSession();
+
+      if (atual.session?.user.is_anonymous) {
+        // Converte a identidade deste aparelho: mesmo id, mesmo espaço.
+        const { data, error: authError } = await supabase.auth.updateUser({
+          email: emailLimpo,
+          password: senha,
+          data: { display_name: nomeLimpo },
+        });
+        if (authError) throw new Error(friendlyError(authError));
+        if (data.user) {
+          await gravarNome(data.user.id, nomeLimpo).catch(() => undefined);
+          await carregarPerfil(data.user.id);
+          // O token antigo ainda diz "anônimo"; um novo traz a conta.
+          await supabase.auth.refreshSession();
+        }
+        return;
+      }
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: emailLimpo,
+        password: senha,
+        options: { data: { display_name: nomeLimpo } },
+      });
+      if (authError) throw new Error(friendlyError(authError));
+      if (!data.session) {
+        throw new Error('Conta criada. Confirme o e-mail que enviamos e depois entre.');
+      }
+    },
+    [gravarNome, carregarPerfil],
+  );
+
+  const signOut = useCallback(async () => {
+    const { error: authError } = await supabase.auth.signOut();
+    // Sem internet o servidor não responde, mas o aparelho precisa sair mesmo assim.
+    if (authError) await supabase.auth.signOut({ scope: 'local' });
+    setProfile(null);
+    setSession(null);
   }, []);
 
   const displayName = profile?.display_name?.trim() || NOME_PADRAO;
@@ -194,28 +220,30 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionValue>(
     () => ({
       loading,
-      error,
       session,
       user,
+      isAnonymous,
       profile,
       displayName,
       setDisplayName,
       needsName: Boolean(profile) && displayName === NOME_PADRAO,
       refreshProfile,
-      disconnectDevice,
-      retry,
+      signIn,
+      signUp,
+      signOut,
     }),
     [
       loading,
-      error,
       session,
       user,
+      isAnonymous,
       profile,
       displayName,
       setDisplayName,
       refreshProfile,
-      disconnectDevice,
-      retry,
+      signIn,
+      signUp,
+      signOut,
     ],
   );
 

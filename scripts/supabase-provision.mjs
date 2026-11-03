@@ -354,6 +354,7 @@ const MIGRACOES = [
   ['0003_rls.sql', 'Row Level Security, permissões por coluna e Realtime'],
   ['0004_catalog_seed.sql', 'lista inicial do enxoval'],
   ['0005_ensure_space.sql', 'o espaço do primeiro uso, criado sozinho e só uma vez'],
+  ['0006_account_profile_sync.sql', 'e-mail e nome do perfil acompanham a conta'],
 ];
 
 async function migrar(ref) {

@@ -41,7 +41,7 @@ export type CodeKind = 'pareamento' | 'recuperacao';
 
 export interface Profile {
   id: string;
-  /** nulo nas sessões anônimas, que é o caso normal */
+  /** nulo nas sessões anônimas antigas, de antes do cadastro */
   email: string | null;
   display_name: string;
   created_at: string;
@@ -68,8 +68,8 @@ export interface SpaceMember {
 }
 
 /**
- * Código que liga um aparelho ao espaço. Substitui o convite por e-mail —
- * o sistema não tem cadastro.
+ * Código que liga um aparelho ao espaço. Liga contas diferentes (uma de
+ * cada pessoa do casal) ao mesmo espaço.
  *
  *  · pareamento  — curto, uso único, vale 24 horas
  *  · recuperacao — mais longo, sem prazo, reutilizável, um por espaço

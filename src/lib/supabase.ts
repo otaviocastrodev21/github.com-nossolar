@@ -39,12 +39,16 @@ const MESSAGES: { match: RegExp; text: string }[] = [
   { match: /invalid login credentials/i, text: 'E-mail ou senha incorretos.' },
   { match: /email not confirmed/i, text: 'Confirme seu e-mail antes de entrar.' },
   {
-    match: /user already registered|already been registered/i,
-    text: 'Já existe uma conta com este e-mail. Faça login.',
+    match: /user already registered|already been registered|email_exists|email address.*already/i,
+    text: 'Já existe uma conta com este e-mail. Use “Entrar”.',
   },
   {
-    match: /password should be at least/i,
-    text: 'A senha precisa ter pelo menos 6 caracteres.',
+    match: /password should be at least|weak_password/i,
+    text: 'A senha precisa ter pelo menos 8 caracteres.',
+  },
+  {
+    match: /signups not allowed|email signups are disabled|email_provider_disabled/i,
+    text: 'O cadastro por e-mail está desligado no Supabase (Authentication → Providers → Email).',
   },
   { match: /unable to validate email|invalid email/i, text: 'Informe um e-mail válido.' },
   {

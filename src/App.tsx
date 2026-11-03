@@ -8,6 +8,7 @@ import { ToastProvider } from '@/contexts/ToastContext';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button, Card, FullPageLoader, Notice } from '@/components/ui/primitives';
 import { SetupScreen } from '@/pages/SetupScreen';
+import { AuthScreen } from '@/pages/AuthScreen';
 // As telas internas carregam sob demanda: a abertura não paga pelos gráficos
 // (Recharts) nem pelas bibliotecas de relatório de quem só vai ao checklist.
 const Dashboard = lazy(() => import('@/pages/Dashboard').then((m) => ({ default: m.Dashboard })));
@@ -105,37 +106,20 @@ function AuthenticatedRoutes() {
 }
 
 /**
-  * Não há login: a sessão anônima é aberta sozinha no primeiro uso. Esta
-  * porteira existe só para esperar isso acontecer e para dizer o que fazer
-  * quando não dá.
-  */
+ * Sem conta, só a tela de entrar. A sessão anônima dos aparelhos que usavam
+ * o app antes do cadastro também para aqui, para virar conta.
+ */
 function Gate() {
-  const { loading, session, error, retry } = useSession();
+  const { loading, user, isAnonymous } = useSession();
 
   if (loading) return <FullPageLoader label="Preparando o Nosso Lar…" />;
 
-  if (error || !session) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center px-4 py-10">
-        <Card className="card-pad w-full max-w-lg">
-          <Notice
-            tone="critical"
-            icon={<AlertTriangle className="h-4.5 w-4.5" />}
-            title="Não foi possível preparar o acesso"
-          >
-            {error ?? 'A sessão não pôde ser aberta.'}
-          </Notice>
-          <Button variant="primary" className="mt-4" onClick={retry}>
-            <RefreshCw className="h-4 w-4" aria-hidden />
-            Tentar de novo
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  if (!user || isAnonymous) return <AuthScreen />;
 
+  // A chave zera todo o estado do espaço ao trocar de conta: nada da conta
+  // anterior pode aparecer, nem por um instante, na seguinte.
   return (
-    <SpaceProvider>
+    <SpaceProvider key={user.id}>
       <AuthenticatedRoutes />
     </SpaceProvider>
   );

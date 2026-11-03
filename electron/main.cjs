@@ -325,7 +325,8 @@ async function createWindow() {
         titulo: document.title,
         origem: location.origin,
         ponte: window.nossoLar?.isDesktop === true,
-        naApp: !!document.querySelector('nav[aria-label=\\"Seções do sistema\\"], main'),
+        // O painel, ou a tela de entrar (um aparelho sem conta para ali).
+        naApp: !!document.querySelector('nav[aria-label=\\"Seções do sistema\\"], main, #auth-email'),
         texto: (document.body.innerText || '').replace(/\\s+/g, ' ').trim().slice(0, 160),
       }))()`;
 
@@ -343,7 +344,7 @@ async function createWindow() {
         }
 
         // Antes bastava a janela montar algo: um ecrã de erro passava como
-        // sucesso. Agora é preciso ter chegado ao painel.
+        // sucesso. Agora é preciso ter chegado ao painel ou à tela de entrar.
         const ok =
           report.montou && report.ponte && report.origem === appOrigin && report.naApp;
         const saida = JSON.stringify({ ok, etapas, ...report }, null, 2);

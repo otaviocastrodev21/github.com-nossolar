@@ -16,13 +16,14 @@ dados:
 | **Instalado pelo navegador** (PWA) | Windows, macOS, Linux, Android, iPhone, iPad | Ícone próprio, janela sem barra de endereço, abre offline |
 | **Aplicativo de computador** | Windows, macOS, Linux | Instalador nativo: `.exe`, `.dmg`, `.AppImage`, `.deb`, `.rpm` |
 
-**Sem cadastro e sem senha.** Não há tela de login: o aparelho ganha uma
-identidade própria no primeiro uso, e a segunda pessoa entra com um código.
+**Conta com e-mail e senha.** A mesma conta entra no app de computador, no
+site e no celular, e todos mostram a mesma lista. A segunda pessoa pode usar a
+mesma conta ou criar a sua e entrar no espaço com um código.
 A proteção entre casais continua inteira — ver
 [seção 3](#3-como-o-casal-compartilha-a-lista).
 
 - **React + TypeScript + Tailwind CSS** na interface
-- **Supabase** (PostgreSQL + sessões anônimas + Realtime + Row Level Security)
+- **Supabase** (PostgreSQL + Auth por e-mail e senha + Realtime + Row Level Security)
 - **Electron** no aplicativo de computador, **Workbox** no aplicativo instalável
 - **Recharts** nos gráficos, **SheetJS** no Excel, **jsPDF** no PDF
 
@@ -149,16 +150,16 @@ tela de configuração explicando o que falta — não quebra.
 
 ### 1.6 Ajustes de autenticação no Supabase
 
-O sistema usa **sessões anônimas**. No painel do projeto:
+O sistema usa **e-mail e senha**. No painel do projeto:
 
 | Onde | O quê |
 |---|---|
-| **Authentication → Sign In / Providers → Anonymous sign-ins** | precisa estar **ligado** |
-| **Authentication → Sign In / Providers → Email** | pode ficar **desligado** — não há cadastro por e-mail |
+| **Authentication → Sign In / Providers → Email** | precisa estar **ligado** |
+| **Email → Confirm email** | **desligado**: o envio de e-mails do plano gratuito só alcança a equipe do projeto, e o link de confirmação não abre o app de computador |
+| **Anonymous sign-ins** | ligado só para os aparelhos antigos, de antes do cadastro, poderem virar conta; o app não abre sessões anônimas novas |
 
-O script `npm run supabase:criar` não mexe nisso; são dois cliques no painel.
-Se a sessão anônima estiver desligada, o aplicativo diz exatamente isso na
-abertura, em vez de falhar em silêncio.
+Senha mínima: 8 caracteres. Sem um servidor de e-mail próprio (SMTP) não há
+"esqueci a senha" por e-mail.
 
 ---
 
@@ -219,20 +220,21 @@ em preços ou compras.
 
 ## 3. Como o casal compartilha a lista
 
-Não existe tela de login porque não existe conta — nem tela de boas-vindas,
-nem escolha a fazer. No primeiro uso, o aplicativo abre sozinho uma **sessão
-anônima** do Supabase e cria o espaço: o aparelho passa a ter uma identidade de
-verdade, com `auth.uid()` próprio, e a primeira coisa que aparece é o painel.
+Cada pessoa entra com **e-mail e senha**. Na primeira entrada da conta o
+espaço nasce com os 208 itens; em qualquer outro aparelho, a mesma conta abre o
+mesmo espaço. O Row Level Security é escrito sobre `auth.uid()`.
 
-Daí em diante, tudo o que protegia os dados antes continua valendo — o Row
-Level Security é escrito sobre `auth.uid()`, e ele não sabe (nem precisa saber)
-se a identidade veio de um e-mail ou de uma sessão anônima.
+Aparelhos que usavam o Nosso Lar antes do cadastro tinham uma sessão anônima.
+Ao abrir, eles mostram "Criar conta": a sessão vira a conta (mesmo id) e leva
+junto tudo o que já foi registrado ali.
+
+Se o casal preferir duas contas, uma liga a outra ao espaço com um código:
 
 ```
 Aparelho da Ana                                 Aparelho do Bruno
    │                                                   │
-   ├─ abre o app → sessão + espaço + 208 itens         ├─ abre o app → idem, no espaço dele
-   ├─ cai direto no painel                             │
+   ├─ cria a conta → espaço + 208 itens               ├─ cria a conta dele → espaço próprio
+   │  (ou o Bruno entra com a mesma conta)            │
    ├─ Configurações → gerar código  ──  ABCD-EFGH  ──► │
    │                                                   ├─ Configurações → Entrar em outro
    │                                                   │  espaço → digita o código
@@ -258,9 +260,9 @@ em minúsculas.
 
 Vale saber antes de confiar os dados ao sistema:
 
-- **O acesso mora no aparelho.** Limpar os dados do site, usar janela anônima
-  ou trocar de celular derruba a sessão. O código de recuperação é a volta —
-  por isso o aplicativo insiste para vocês anotarem.
+- **O acesso mora na conta.** Limpar os dados do site ou trocar de celular só
+  pede para entrar de novo. Sem SMTP próprio não há "esqueci a senha": guarde a
+  senha ou tenha o código de recuperação.
 - **Quem tem o código de recuperação, entra.** É a chave de casa: não mande em
   grupo nem deixe em print. Se vazar, gere outro — o anterior para de
   funcionar na hora.
@@ -526,9 +528,8 @@ recuperação é único por espaço e some assim que outro é gerado. Nenhum dos
 que roda com privilégio próprio e nunca expõe a lista. Ambos podem ser
 revogados a qualquer momento.
 
-**Sessões anônimas.** Qualquer pessoa pode abrir uma — é o que dispensa o
-cadastro. Mas uma sessão nova não enxerga espaço nenhum: sem um código válido,
-ela fica num aplicativo vazio.
+**Contas novas.** Qualquer pessoa pode criar uma, mas uma conta nova só
+enxerga o próprio espaço: sem um código válido, não alcança o de ninguém.
 
 **Rastreabilidade.** Toda criação, atualização e exclusão de itens, compras,
 orçamentos e despesas vai para `activity_log` com autor e horário, visível em
@@ -850,7 +851,7 @@ ou instalar na tela de início — veja a [seção 10](#10-instalar-no-computado
     │   ├── supabase.ts          # cliente e tradução de erros
     │   └── viz.ts               # paleta de gráficos validada
     ├── contexts/
-    │   ├── SessionContext.tsx   # sessão anônima, aberta sozinha; sem login
+    │   ├── SessionContext.tsx   # conta (e-mail e senha) e conversão da sessão antiga
     │   ├── SpaceContext.tsx     # dados do espaço, Realtime e mutações
     │   └── ToastContext.tsx
     ├── components/
