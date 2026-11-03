@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import {
@@ -7,19 +7,28 @@ import {
   LayoutDashboard,
   ListChecks,
   Menu,
+  Monitor,
+  Moon,
   RefreshCw,
   Settings,
   ShoppingBag,
+  Sun,
   Wallet,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import { useSession } from '@/contexts/SessionContext';
 import { useSpace } from '@/contexts/SpaceContext';
+import { useToast } from '@/contexts/ToastContext';
 import { initials, percentPoints } from '@/lib/format';
 import { Meter } from '@/components/dashboard/figures';
+import { Logo } from '@/components/ui/primitives';
 import { ConnectionBanner, InstallPrompt, UpdatePrompt } from './AppStatus';
 import { desktop } from '@/lib/runtime';
+import { useTheme, type ThemeMode } from '@/lib/theme';
+import { useSpotlight } from '@/lib/motion';
+import { celebrate } from '@/lib/celebrate';
+import type { ItemStatus } from '@/types/database';
 
 interface NavEntry {
   to: string;
@@ -49,38 +58,13 @@ function Brand({ onNavigate }: { onNavigate?: () => void }) {
     <NavLink
       to="/"
       onClick={onNavigate}
-      className="flex items-center gap-3 rounded-xl px-1 py-1 transition hover:opacity-90"
+      className="group flex min-w-0 items-center gap-3 rounded-xl px-1 py-1 transition hover:opacity-95"
     >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-wood-400/25 ring-1 ring-wood-300">
-        <svg viewBox="0 0 32 32" className="h-6 w-6" aria-hidden>
-          <path
-            d="M6 15.2 16 7l10 8.2"
-            fill="none"
-            stroke="#906D3B"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M9.5 14.6V24.5h13V14.6"
-            fill="none"
-            stroke="#242424"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M12.8 19.4l2.5 2.5 4.4-5.2"
-            fill="none"
-            stroke="#5C643F"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+      <span className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-wood-100 via-cream-50 to-olive-100 shadow-card ring-1 ring-wood-300/70 transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105">
+        <Logo className="h-6 w-6" />
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[0.9375rem] font-semibold leading-tight text-ink">
+        <span className="block truncate text-[0.9375rem] font-semibold leading-tight tracking-[-0.01em] text-ink">
           {space?.name ?? 'Nosso Lar'}
         </span>
         <span className="block truncate text-[0.75rem] leading-tight text-ink-muted">
@@ -93,7 +77,7 @@ function Brand({ onNavigate }: { onNavigate?: () => void }) {
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav aria-label="Seções do sistema" className="flex flex-col gap-0.5">
+    <nav aria-label="Seções do sistema" className="flex flex-col gap-1">
       {NAV.map(({ to, label, icon: Icon, end }) => (
         <NavLink
           key={to}
@@ -102,17 +86,28 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             clsx(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-[0.9375rem] font-medium transition',
+              'group relative flex items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-[0.9375rem] font-medium transition-all duration-300',
               isActive
-                ? 'bg-olive-100 text-olive-700 ring-1 ring-olive-300'
-                : 'text-ink-secondary hover:bg-greige-100 hover:text-ink',
+                ? 'bg-gradient-to-r from-olive-100 via-olive-100/70 to-transparent text-olive-700 shadow-[inset_0_0_0_1px_rgb(var(--olive-300)/0.7)]'
+                : 'text-ink-secondary hover:bg-cream-50/70 hover:pl-4 hover:text-ink',
             )
           }
         >
           {({ isActive }) => (
             <>
+              {/* barra acesa à esquerda do item ativo */}
+              <span
+                aria-hidden
+                className={clsx(
+                  'absolute left-0 top-1/2 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-olive-500 to-wood-500 transition-all duration-300',
+                  isActive ? 'h-5 opacity-100 shadow-glow' : 'h-0 opacity-0',
+                )}
+              />
               <Icon
-                className={clsx('h-[1.125rem] w-[1.125rem] shrink-0', isActive && 'text-olive-600')}
+                className={clsx(
+                  'h-[1.125rem] w-[1.125rem] shrink-0 transition-transform duration-300',
+                  isActive ? 'text-olive-600' : 'group-hover:scale-110',
+                )}
                 aria-hidden
               />
               <span className="truncate">{label}</span>
@@ -128,10 +123,11 @@ function ProgressSummary() {
   const { overview } = useSpace();
 
   return (
-    <div className="rounded-xl border border-cream-400 bg-cream-200/70 p-3.5">
+    <div className="relative overflow-hidden rounded-2xl border border-cream-400/70 bg-gradient-to-br from-cream-50/80 via-olive-100/50 to-wood-100/60 p-3.5 shadow-card">
+      <span aria-hidden className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-olive-300/40 blur-2xl" />
       <div className="flex items-baseline justify-between gap-2">
         <span className="eyebrow">Enxoval</span>
-        <span className="tnum text-[0.9375rem] font-semibold text-ink">
+        <span className="tnum text-[1.0625rem] font-semibold text-ink">
           {percentPoints(overview.completion * 100)}
         </span>
       </div>
@@ -155,15 +151,15 @@ function Members() {
   if (members.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1.5" title="Participantes do espaço">
+    <div className="flex items-center -space-x-2" title="Participantes do espaço">
       {members.slice(0, 3).map((member) => (
         <span
           key={member.user_id}
           className={clsx(
-            'grid h-8 w-8 place-items-center rounded-full text-[0.6875rem] font-semibold ring-2 ring-cream-100',
+            'relative grid h-9 w-9 place-items-center rounded-full text-[0.6875rem] font-semibold ring-2 ring-cream-100 transition-transform duration-300 hover:z-10 hover:-translate-y-0.5 hover:scale-110',
             member.user_id === user?.id
-              ? 'bg-olive-600 text-cream-50'
-              : 'bg-wood-300 text-ink',
+              ? 'bg-gradient-to-br from-olive-500 to-olive-700 text-cream-50'
+              : 'bg-gradient-to-br from-wood-300 to-wood-400 text-ink',
           )}
           title={`${member.profile?.display_name || 'Participante'}${
             member.role === 'dono' ? ' · criou o espaço' : ''
@@ -173,7 +169,7 @@ function Members() {
         </span>
       ))}
       {members.length > 3 ? (
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-greige-200 text-[0.6875rem] font-semibold text-ink-secondary ring-2 ring-cream-100">
+        <span className="relative grid h-9 w-9 place-items-center rounded-full bg-greige-200 text-[0.6875rem] font-semibold text-ink-secondary ring-2 ring-cream-100">
           +{members.length - 3}
         </span>
       ) : null}
@@ -181,12 +177,108 @@ function Members() {
   );
 }
 
+const TEMAS: { mode: ThemeMode; label: string; icon: LucideIcon }[] = [
+  { mode: 'light', label: 'Tema claro', icon: Sun },
+  { mode: 'dark', label: 'Tema escuro', icon: Moon },
+  { mode: 'system', label: 'Tema do sistema', icon: Monitor },
+];
+
+/** Alterna claro → escuro → sistema. O ícone entra com um pulo ao trocar. */
+export function ThemeToggle({ className }: { className?: string }) {
+  const { mode, setMode } = useTheme();
+  const indice = Math.max(
+    0,
+    TEMAS.findIndex((t) => t.mode === mode),
+  );
+  const atual = TEMAS[indice];
+  const proximo = TEMAS[(indice + 1) % TEMAS.length];
+  const Icon = atual.icon;
+
+  return (
+    <button
+      type="button"
+      onClick={() => setMode(proximo.mode)}
+      title={`${atual.label} — clique para ${proximo.label.toLowerCase()}`}
+      aria-label={`${atual.label}. Mudar para ${proximo.label.toLowerCase()}`}
+      className={clsx(
+        'grid h-10 w-10 place-items-center rounded-xl border border-greige-300/80 bg-cream-50/70 text-ink-secondary backdrop-blur transition hover:-translate-y-px hover:bg-cream-50 hover:text-ink',
+        className,
+      )}
+    >
+      <Icon key={atual.mode} className="h-4 w-4 animate-pop-in" aria-hidden />
+    </button>
+  );
+}
+
+function ContaRodape({ onNavigate }: { onNavigate?: () => void }) {
+  const { displayName, user } = useSession();
+  return (
+    <NavLink
+      to="/configuracoes"
+      onClick={onNavigate}
+      className="group flex items-center gap-2.5 rounded-xl border-t border-cream-400/70 px-1 pt-4 transition"
+    >
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-olive-500 to-olive-700 text-[0.75rem] font-semibold text-cream-50 shadow-card transition-transform duration-300 group-hover:scale-105">
+        {initials(displayName)}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[0.875rem] font-medium leading-tight text-ink">
+          {displayName}
+        </span>
+        <span className="block truncate text-[0.75rem] leading-tight text-ink-muted">
+          {user?.email ?? 'Sua conta'}
+        </span>
+      </span>
+    </NavLink>
+  );
+}
+
+/**
+ * Comemora quando um item passa a "comprado" — seja pela própria pessoa, seja
+ * pelo par em outro aparelho (chega pelo Realtime). E de novo, maior, quando o
+ * enxoval inteiro fica pronto. A primeira carga só registra o estado.
+ */
+function useCelebrations() {
+  const { items, overview } = useSpace();
+  const toast = useToast();
+  const anteriores = useRef<Map<string, ItemStatus> | null>(null);
+  const completo = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    const antes = anteriores.current;
+    anteriores.current = new Map(items.map((item) => [item.id, item.status]));
+    if (!antes) return;
+
+    const novos = items.filter(
+      (item) => item.status === 'comprado' && antes.has(item.id) && antes.get(item.id) !== 'comprado',
+    );
+    if (novos.length > 0) {
+      celebrate({ amount: 90 });
+      toast.success(
+        novos.length === 1 ? `${novos[0].name}: comprado!` : `${novos.length} itens comprados!`,
+        'Mais um passo para o lar de vocês.',
+      );
+    }
+  }, [items, toast]);
+
+  useEffect(() => {
+    const agora = overview.itemsTotal > 0 && overview.completion >= 1;
+    if (completo.current === false && agora) {
+      celebrate({ amount: 220, origin: { x: 0.5, y: 0.25 } });
+      toast.success('Enxoval completo!', 'Todos os itens planejados foram comprados.');
+    }
+    completo.current = agora;
+  }, [overview.completion, overview.itemsTotal, toast]);
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const { displayName } = useSession();
   const { refresh, refreshing } = useSpace();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useSpotlight();
+  useCelebrations();
 
   // Menu "Ir para" e Ctrl/Cmd+R do aplicativo de computador.
   useEffect(() => {
@@ -222,40 +314,24 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       {/* ── Barra lateral (desktop) ── */}
-      <aside className="sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col gap-5 border-r border-cream-400 bg-cream-100 px-4 py-5 lg:flex">
+      <aside className="glass-bar sticky top-0 hidden h-dvh w-[17.5rem] shrink-0 flex-col gap-5 border-r border-cream-400/70 px-4 py-5 lg:flex">
         <Brand />
         <ProgressSummary />
         <div className="min-h-0 flex-1 overflow-y-auto">
           <NavList />
         </div>
-        {/* Sem conta nem senha: aqui vale só lembrar quem está usando. */}
-        <NavLink
-          to="/configuracoes"
-          className="flex items-center gap-2.5 rounded-xl border-t border-cream-400 px-1 pt-4 transition hover:opacity-80"
-        >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-olive-600 text-[0.75rem] font-semibold text-cream-50">
-            {initials(displayName)}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-[0.875rem] font-medium leading-tight text-ink">
-              {displayName}
-            </span>
-            <span className="block truncate text-[0.75rem] leading-tight text-ink-muted">
-              Este aparelho
-            </span>
-          </span>
-        </NavLink>
+        <ContaRodape />
       </aside>
 
       {/* ── Gaveta (celular/tablet) ── */}
       {drawerOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 animate-fade-in bg-ink/35 backdrop-blur-[2px]"
+            className="absolute inset-0 animate-fade-in bg-scrim/45 backdrop-blur-sm"
             onClick={() => setDrawerOpen(false)}
             aria-hidden
           />
-          <div className="relative z-10 flex h-full w-[17.5rem] max-w-[85vw] animate-rise-in flex-col gap-5 border-r border-cream-400 bg-cream-100 px-4 py-5 shadow-pop">
+          <div className="relative z-10 flex h-full w-[17.5rem] max-w-[85vw] animate-rise-in flex-col gap-5 border-r border-cream-400/70 bg-cream-100/90 px-4 py-5 shadow-pop backdrop-blur-2xl">
             <div className="flex items-start justify-between gap-2">
               <Brand onNavigate={() => setDrawerOpen(false)} />
               <button
@@ -271,35 +347,19 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="min-h-0 flex-1 overflow-y-auto">
               <NavList onNavigate={() => setDrawerOpen(false)} />
             </div>
-            <NavLink
-              to="/configuracoes"
-              onClick={() => setDrawerOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl border-t border-cream-400 px-1 pt-4"
-            >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-olive-600 text-[0.75rem] font-semibold text-cream-50">
-                {initials(displayName)}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[0.875rem] font-medium leading-tight text-ink">
-                  {displayName}
-                </span>
-                <span className="block truncate text-[0.75rem] leading-tight text-ink-muted">
-                  Este aparelho
-                </span>
-              </span>
-            </NavLink>
+            <ContaRodape onNavigate={() => setDrawerOpen(false)} />
           </div>
         </div>
       ) : null}
 
       {/* ── Conteúdo ── */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-cream-400 bg-cream-100/90 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8">
+        <header className="glass-bar sticky top-0 z-30 flex items-center gap-3 border-b border-cream-400/60 px-4 py-3 sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
             aria-label="Abrir menu"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-greige-300 bg-cream-50 text-ink-secondary transition hover:bg-cream-200 lg:hidden"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-greige-300/80 bg-cream-50/70 text-ink-secondary transition hover:bg-cream-50 lg:hidden"
           >
             <Menu className="h-[1.125rem] w-[1.125rem]" aria-hidden />
           </button>
@@ -311,55 +371,75 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {refreshing ? (
               <span className="hidden items-center gap-1.5 text-[0.75rem] text-ink-muted sm:flex">
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-olive-500" aria-hidden />
                 Sincronizando
               </span>
             ) : null}
+            <ThemeToggle />
             <button
               type="button"
               onClick={() => void refresh()}
               title="Atualizar dados"
               aria-label="Atualizar dados"
-              className="grid h-10 w-10 place-items-center rounded-xl border border-greige-300 bg-cream-50 text-ink-secondary transition hover:bg-cream-200"
+              className="group/sync grid h-10 w-10 place-items-center rounded-xl border border-greige-300/80 bg-cream-50/70 text-ink-secondary backdrop-blur transition hover:-translate-y-px hover:bg-cream-50 hover:text-ink"
             >
-              <RefreshCw className={clsx('h-4 w-4', refreshing && 'animate-spin')} aria-hidden />
+              <RefreshCw
+                className={clsx(
+                  'h-4 w-4 transition-transform duration-500',
+                  refreshing ? 'animate-spin' : 'group-hover/sync:rotate-180',
+                )}
+                aria-hidden
+              />
             </button>
-            <Members />
+            <div className="hidden sm:block">
+              <Members />
+            </div>
           </div>
         </header>
 
         <main
           id="conteudo"
-          className="min-w-0 flex-1 px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8 lg:pb-8"
+          className="min-w-0 flex-1 px-4 py-5 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 lg:px-8 lg:pb-10"
         >
           <ConnectionBanner />
-          {children}
+          {/* A chave reinicia a animação a cada troca de tela. */}
+          <div key={location.pathname} className="animate-page-in">
+            {children}
+          </div>
         </main>
       </div>
 
-      {/* ── Navegação inferior (celular) ── */}
+      {/* ── Navegação inferior (celular): pílula flutuante de vidro ── */}
       <nav
         aria-label="Navegação rápida"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-cream-400 bg-cream-100/95 backdrop-blur-md lg:hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="fixed inset-x-3 z-40 lg:hidden"
+        style={{ bottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
       >
-        <ul className="grid grid-cols-5">
+        <ul className="glass-bar grid grid-cols-5 gap-1 rounded-[1.375rem] border border-cream-400/70 p-1.5 shadow-pop">
           {MOBILE_NAV.map(({ to, label, icon: Icon }) => (
-            <li key={to}>
+            <li key={to} className="min-w-0">
               <NavLink
                 to={to}
                 end={to === '/'}
                 className={({ isActive }) =>
                   clsx(
-                    'flex flex-col items-center gap-0.5 px-1 py-2.5 text-[0.6875rem] font-medium transition',
-                    isActive ? 'text-olive-700' : 'text-ink-muted',
+                    'relative flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2 text-[0.6875rem] font-medium transition-all duration-300',
+                    isActive
+                      ? 'bg-gradient-to-b from-olive-100 to-olive-200/70 text-olive-700 shadow-[inset_0_0_0_1px_rgb(var(--olive-300)/0.6)]'
+                      : 'text-ink-muted active:scale-95',
                   )
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <Icon className={clsx('h-5 w-5', isActive && 'text-olive-600')} aria-hidden />
-                    <span className="truncate">{label}</span>
+                    <Icon
+                      className={clsx(
+                        'h-5 w-5 transition-transform duration-300',
+                        isActive && '-translate-y-0.5 scale-110 text-olive-600',
+                      )}
+                      aria-hidden
+                    />
+                    <span className="max-w-full truncate">{label}</span>
                   </>
                 )}
               </NavLink>
@@ -387,15 +467,16 @@ export function PageHeader({
   icon?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-6">
-      <div className="flex min-w-0 items-start gap-3">
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-3 sm:mb-7">
+      <div className="flex min-w-0 items-start gap-3.5">
         {icon ? (
-          <span className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-wood-100 text-wood-600">
+          <span className="relative isolate mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-wood-100 via-cream-50 to-olive-100 text-wood-600 shadow-card ring-1 ring-wood-300/60">
+            <span aria-hidden className="absolute inset-0 -z-10 rounded-2xl bg-wood-300/40 blur-xl" />
             {icon}
           </span>
         ) : null}
         <div className="min-w-0">
-          <h1 className="text-[1.375rem] font-semibold leading-tight tracking-[-0.01em] text-ink sm:text-[1.5rem]">
+          <h1 className="text-gradient text-[1.5rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[1.75rem]">
             {title}
           </h1>
           {description ? (

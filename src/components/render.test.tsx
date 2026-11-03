@@ -301,7 +301,8 @@ describe('componentes de base', () => {
       </Chip>,
     );
     const dot = container.querySelector('span[aria-hidden]') as HTMLElement;
-    expect(dot.style.background.toLowerCase()).toContain('67, 74, 42');
+    // A cor vem do tema (variável CSS), igual para o ponto em qualquer tema.
+    expect(dot.style.background).toBe('var(--step-comprado)');
     expect(screen.getByText('Comprado').className).toContain('text-ink');
   });
 });

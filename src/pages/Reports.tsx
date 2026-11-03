@@ -167,7 +167,7 @@ export function Reports() {
         description="Tudo o que o sistema mostra pode sair em arquivo, com quantidades, preços, totais e status. Os valores saem no padrão brasileiro."
       />
 
-      <div className="flex flex-col gap-5">
+      <div className="stagger flex flex-col gap-5">
         {/* ── Painel-resumo ── */}
         <Card className="card-pad">
           <h2 className="eyebrow mb-3">O que entra nos relatórios agora</h2>
@@ -295,7 +295,7 @@ export function Reports() {
                   <tr className="border-t border-cream-400 bg-cream-200/60">
                     {/* #f4f2ec = o cream-200/60 da linha já composto sobre o cartão:
                         a célula fixa precisa de fundo opaco. */}
-                    <th scope="row" className="sticky left-0 z-[1] max-sm:w-[10rem] max-sm:min-w-[10rem] bg-[#f4f2ec] px-4 py-3 text-left font-semibold text-ink sm:px-5">
+                    <th scope="row" className="sticky left-0 z-[1] max-sm:w-[10rem] max-sm:min-w-[10rem] bg-cream-200 px-4 py-3 text-left font-semibold text-ink sm:px-5">
                       Total
                     </th>
                     <td className="tnum px-3 py-3 text-right text-ink">

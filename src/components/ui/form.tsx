@@ -74,8 +74,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   return (
     <div
       className={clsx(
-        'flex items-center overflow-hidden rounded-xl border bg-cream-50 transition',
-        'focus-within:border-olive-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-olive-500/25',
+        'flex items-center overflow-hidden rounded-xl border bg-cream-50/80 transition',
+        'focus-within:border-olive-500 focus-within:bg-cream-50 focus-within:ring-4 focus-within:ring-olive-500/15',
         invalid ? 'border-status-critical' : 'border-greige-300',
         className,
       )}
@@ -191,13 +191,14 @@ export function Checkbox({
         />
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-md border border-greige-400 bg-cream-50 transition
-                     peer-checked:border-olive-600 peer-checked:bg-olive-600 peer-disabled:opacity-50
+          className="pointer-events-none absolute inset-0 rounded-md border border-greige-400 bg-cream-50 transition duration-300
+                     peer-hover:border-olive-500 peer-checked:scale-110 peer-checked:border-olive-600 peer-checked:bg-gradient-to-br
+                     peer-checked:from-olive-500 peer-checked:to-olive-700 peer-checked:shadow-glow peer-disabled:opacity-50
                      peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2
                      peer-focus-visible:outline-[#5c643f]"
         />
         <Check
-          className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 text-cream-50 opacity-0 transition peer-checked:opacity-100"
+          className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 scale-50 text-cream-50 opacity-0 transition duration-300 peer-checked:scale-110 peer-checked:opacity-100"
           strokeWidth={3}
           aria-hidden
         />
@@ -232,7 +233,7 @@ export function SegmentedControl<T extends string>({
       role="group"
       aria-label={label}
       className={clsx(
-        'inline-flex shrink-0 items-center gap-0.5 rounded-xl border border-greige-300 bg-cream-200 p-0.5',
+        'inline-flex shrink-0 items-center gap-0.5 rounded-xl border border-greige-300/80 bg-cream-200/70 p-0.5 backdrop-blur',
         className,
       )}
     >
@@ -251,8 +252,8 @@ export function SegmentedControl<T extends string>({
                 ? 'h-8 touch:h-10 touch:min-w-10 px-2.5 touch:px-3 text-[0.75rem]'
                 : 'h-9 touch:h-10 px-3 text-[0.8125rem]',
               active
-                ? 'bg-cream-50 text-ink shadow-sm'
-                : 'text-ink-muted hover:bg-cream-100 hover:text-ink-secondary',
+                ? 'bg-cream-50 text-ink shadow-[0_1px_2px_rgb(0_0_0/0.08),0_4px_12px_-6px_rgb(0_0_0/0.18)]'
+                : 'text-ink-muted hover:bg-cream-100/70 hover:text-ink-secondary',
             )}
           >
             {option.label}

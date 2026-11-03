@@ -95,7 +95,7 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 animate-fade-in bg-ink/35 backdrop-blur-[2px]"
+        className="absolute inset-0 animate-fade-in bg-scrim/45 backdrop-blur-sm"
         onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden
       />
@@ -106,11 +106,13 @@ export function Modal({
         aria-labelledby={titleId}
         className={clsx(
           'relative z-10 flex max-h-[92dvh] w-full flex-col animate-slide-up',
-          'rounded-t-3xl border border-cream-400 bg-cream-100 shadow-pop sm:rounded-2xl',
+          'rounded-t-3xl border border-cream-400/80 bg-cream-100/90 shadow-pop backdrop-blur-2xl sm:rounded-3xl',
           widths[size],
           'sm:mx-4',
         )}
       >
+        {/* alça: no celular a janela sobe de baixo, como uma folha */}
+        <span aria-hidden className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-greige-300 sm:hidden" />
         <header className="flex items-start justify-between gap-3 border-b border-cream-400/70 px-5 py-4 sm:px-6">
           <div className="min-w-0">
             <h2 id={titleId} className="text-[1.0625rem] font-semibold leading-tight text-ink">
@@ -196,7 +198,7 @@ export function ConfirmDialog({
         <span
           className={clsx(
             'grid h-10 w-10 shrink-0 place-items-center rounded-xl',
-            tone === 'danger' ? 'bg-[#FDF0F0] text-status-critical' : 'bg-olive-100 text-olive-700',
+            tone === 'danger' ? 'bg-tint-critical text-status-critical' : 'bg-olive-100 text-olive-700',
           )}
           aria-hidden
         >

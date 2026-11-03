@@ -38,7 +38,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     return (
       <div className="flex min-h-dvh items-center justify-center px-4 py-10">
         <Card className="card-pad w-full max-w-lg">
-          <span className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-[#FDF0F0] text-status-critical">
+          <span className="mb-3 grid h-11 w-11 place-items-center rounded-xl bg-tint-critical text-status-critical">
             <AlertTriangle className="h-5 w-5" aria-hidden />
           </span>
           <h1 className="text-[1.25rem] font-semibold text-ink">Algo saiu do previsto</h1>

@@ -365,7 +365,7 @@ export function Pending() {
           />
         </Card>
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="stagger flex flex-col gap-5">
           {byPriority.map(({ priority: groupPriority, items: groupItems }) => {
             const groupTotal = groupItems.reduce(
               (acc, item) => acc + Number(item.estimated_remaining),

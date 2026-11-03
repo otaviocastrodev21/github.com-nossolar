@@ -55,7 +55,7 @@ export function ConnectionBanner() {
   return (
     <div
       role="status"
-      className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-status-serious/45 bg-[#FDF2EC] px-4 py-3"
+      className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-status-serious/45 bg-tint-serious px-4 py-3"
     >
       <CloudOff className="h-4.5 w-4.5 shrink-0" style={{ color: VIZ.status.serious }} aria-hidden />
       <p className="min-w-0 flex-1 text-[0.875rem] leading-relaxed text-ink">

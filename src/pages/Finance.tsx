@@ -106,7 +106,7 @@ export function Finance() {
         }
       />
 
-      <div className="flex flex-col gap-5">
+      <div className="stagger flex flex-col gap-5">
         {/* ── Orçamento total ── */}
         <Card className="card-pad">
           {overview.budgetTotal === null ? (
@@ -435,7 +435,7 @@ export function Finance() {
                           </span>
                           {overdue ? (
                             <Chip
-                              className="border-status-critical/40 bg-[#FDF0F0] text-ink max-sm:mt-1 max-sm:flex max-sm:w-fit sm:ml-2"
+                              className="border-status-critical/40 bg-tint-critical text-ink max-sm:mt-1 max-sm:flex max-sm:w-fit sm:ml-2"
                               icon={
                                 <CircleAlert
                                   className="h-3 w-3"

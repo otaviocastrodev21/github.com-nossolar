@@ -17,24 +17,32 @@
 
 import type { ItemStatus } from '@/types/database';
 
+/**
+ * Os valores são variáveis CSS (definidas em index.css para os dois temas):
+ * o SVG do Recharts e os estilos em linha as resolvem na hora, então trocar o
+ * tema repinta os gráficos sem renderizar nada de novo. A validação acima vale
+ * para o tema claro; no escuro a rampa é invertida (mais comprado = mais claro).
+ */
 export const VIZ = {
-  surface: '#F7F6F2',
-  hairline: '#E6E3DA',
+  surface: 'var(--viz-surface)',
+  hairline: 'var(--viz-hairline)',
 
-  textPrimary: '#242424',
-  textSecondary: '#5C5A53',
-  textMuted: '#7A776D',
+  textPrimary: 'var(--viz-text-primary)',
+  textSecondary: 'var(--viz-text-secondary)',
+  textMuted: 'var(--viz-text-muted)',
 
   /** série principal das barras — 3,81:1 na superfície */
-  series: '#78815C',
+  series: 'var(--series)',
   /** linha de evolução — 5,80:1 */
-  seriesLine: '#5C643F',
-  /** área sob a linha: o matiz a ~10% */
-  seriesWash: 'rgba(120, 129, 92, 0.10)',
+  seriesLine: 'var(--series-line)',
+  /** área sob a linha: o matiz a ~16% */
+  seriesWash: 'var(--series-wash)',
   /** trilha das barras de progresso: passo mais claro da mesma rampa */
-  track: '#EFF2E7',
+  track: 'var(--track)',
   /** referência de orçamento (neutro, nunca compete com a série) */
-  reference: '#C3BCAE',
+  reference: 'var(--reference)',
+  /** estimado (passo claro da rampa) */
+  estimate: 'var(--step-estimado)',
 
   status: {
     good: '#0CA30C',
@@ -46,10 +54,10 @@ export const VIZ = {
 
 /** Rampa ordinal do progresso do item: pendente -> parcial -> comprado. */
 export const STATUS_FILL: Record<ItemStatus, string> = {
-  pendente: '#9BA382',
-  parcial: '#78815C',
-  comprado: '#434A2A',
-  nao_sera_comprado: '#C3BCAE',
+  pendente: 'var(--step-pendente)',
+  parcial: 'var(--step-parcial)',
+  comprado: 'var(--step-comprado)',
+  nao_sera_comprado: 'var(--step-excluido)',
 };
 
 /**

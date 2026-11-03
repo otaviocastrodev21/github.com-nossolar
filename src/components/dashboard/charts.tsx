@@ -82,7 +82,7 @@ function VizTooltip({
   rows: { label: string; value: string; color?: string }[];
 }) {
   return (
-    <div className="pointer-events-none rounded-xl border border-cream-400 bg-cream-50 px-3 py-2 shadow-pop">
+    <div className="pointer-events-none min-w-[10rem] animate-fade-in rounded-xl border border-cream-400/80 bg-cream-50/85 px-3 py-2 shadow-pop backdrop-blur-xl">
       <p className="text-[0.8125rem] font-semibold text-ink">{title}</p>
       <ul className="mt-1 space-y-0.5">
         {rows.map((row) => (
@@ -183,6 +183,12 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
                 margin={{ top: 4, right: phone ? 60 : 76, bottom: 8, left: 4 }}
                 barCategoryGap={10}
               >
+                <defs>
+                  <linearGradient id="barra-categoria" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="var(--series)" stopOpacity={0.75} />
+                    <stop offset="100%" stopColor="var(--series-line)" />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid horizontal={false} stroke={VIZ.hairline} />
                 <XAxis
                   type="number"
@@ -201,7 +207,7 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
                   tick={{ fontSize: 11.5, fill: VIZ.textSecondary }}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(120,129,92,0.06)' }}
+                  cursor={{ fill: 'var(--series-wash)', radius: 6 }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const row = payload[0].payload as CategoryRow;
@@ -221,11 +227,18 @@ export function CategorySpendChart({ rows }: { rows: CategoryBreakdown[] }) {
                     );
                   }}
                 />
-                <Bar dataKey="spent" maxBarSize={24} radius={[0, 4, 4, 0]} isAnimationActive>
+                <Bar
+                  dataKey="spent"
+                  maxBarSize={24}
+                  radius={[0, 6, 6, 0]}
+                  isAnimationActive
+                  animationDuration={1100}
+                  animationEasing="ease-out"
+                >
                   {data.map((row) => (
                     <Cell
                       key={row.name}
-                      fill={row.isOther ? VIZ.reference : VIZ.series}
+                      fill={row.isOther ? VIZ.reference : 'url(#barra-categoria)'}
                     />
                   ))}
                   <LabelList
@@ -329,6 +342,12 @@ export function MonthlySpendChart({
           <div style={{ minWidth: data.length > 18 ? data.length * 40 : undefined }}>
             <ResponsiveContainer width="100%" height={264}>
               <AreaChart data={data} margin={{ top: 20, right: 20, bottom: 8, left: 4 }}>
+                <defs>
+                  <linearGradient id="area-mensal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--series)" stopOpacity={0.42} />
+                    <stop offset="100%" stopColor="var(--series)" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} stroke={VIZ.hairline} />
                 <XAxis
                   dataKey="label"
@@ -353,7 +372,7 @@ export function MonthlySpendChart({
                   tick={{ fontSize: 11.5, fill: VIZ.textMuted }}
                 />
                 <Tooltip
-                  cursor={{ stroke: VIZ.reference, strokeWidth: 1 }}
+                  cursor={{ stroke: VIZ.seriesLine, strokeWidth: 1, strokeOpacity: 0.4 }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;
                     const row = payload[0].payload as MonthBreakdown & { label: string };
@@ -394,12 +413,20 @@ export function MonthlySpendChart({
                   type="monotone"
                   dataKey="spent"
                   stroke={VIZ.seriesLine}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   strokeLinejoin="round"
                   strokeLinecap="round"
-                  fill={VIZ.seriesWash}
+                  fill="url(#area-mensal)"
+                  animationDuration={1300}
+                  animationEasing="ease-out"
                   dot={{ r: 4, fill: VIZ.seriesLine, stroke: VIZ.surface, strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: VIZ.seriesLine, stroke: VIZ.surface, strokeWidth: 2 }}
+                  activeDot={{
+                    r: 7,
+                    fill: VIZ.seriesLine,
+                    stroke: VIZ.surface,
+                    strokeWidth: 3,
+                    style: { filter: 'drop-shadow(0 0 6px var(--series))' },
+                  }}
                 >
                   {/* Rótulo direto apenas no último ponto com valor. */}
                   <LabelList
@@ -481,11 +508,11 @@ export function EstimateVsActual({ rows }: { rows: DumbbellRow[] }) {
     <div className="flex flex-col gap-4">
       <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-[0.8125rem]">
         <li className="flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: '#C1C8AE' }} />
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: VIZ.estimate }} />
           <span className="text-ink-secondary">Estimado</span>
         </li>
         <li className="flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: '#434A2A' }} />
+          <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: 'var(--step-comprado)' }} />
           <span className="text-ink-secondary">Realizado</span>
         </li>
       </ul>
@@ -517,15 +544,15 @@ export function EstimateVsActual({ rows }: { rows: DumbbellRow[] }) {
                 <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-cream-400" />
                 <div
                   className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full"
-                  style={{ left: `${from}%`, width: `${Math.max(to - from, 0)}%`, background: '#9BA382' }}
+                  style={{ left: `${from}%`, width: `${Math.max(to - from, 0)}%`, background: 'var(--step-pendente)' }}
                 />
                 <span
                   className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2"
-                  style={{ left: `${estimatedPct}%`, background: '#C1C8AE', ['--tw-ring-color' as string]: VIZ.surface }}
+                  style={{ left: `${estimatedPct}%`, background: VIZ.estimate, ['--tw-ring-color' as string]: VIZ.surface }}
                 />
                 <span
                   className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2"
-                  style={{ left: `${actualPct}%`, background: '#434A2A', ['--tw-ring-color' as string]: VIZ.surface }}
+                  style={{ left: `${actualPct}%`, background: 'var(--step-comprado)', ['--tw-ring-color' as string]: VIZ.surface }}
                 />
               </div>
             </li>

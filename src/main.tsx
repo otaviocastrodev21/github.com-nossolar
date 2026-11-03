@@ -1,3 +1,5 @@
+// Primeiro: põe o tema escolhido no <html> antes de qualquer pintura.
+import './lib/theme';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Eye, EyeOff, Info, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
 import { SENHA_MINIMA, useSession } from '@/contexts/SessionContext';
-import { Button, Card, Notice } from '@/components/ui/primitives';
+import { Button, Card, Logo, Notice } from '@/components/ui/primitives';
+import { ThemeToggle } from '@/components/layout/AppShell';
 import { Field, Input, SegmentedControl } from '@/components/ui/form';
 
 type Aba = 'entrar' | 'criar';
@@ -42,23 +43,29 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-4 py-10 sm:px-6">
-      <div className="w-full max-w-md">
-        <header className="mb-6 text-center">
-          <span className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-wood-400/25 ring-1 ring-wood-300">
-            <svg viewBox="0 0 32 32" className="h-8 w-8" aria-hidden>
-              <path d="M6 15.2 16 7l10 8.2" fill="none" stroke="#906D3B" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M9.5 14.6V24.5h13V14.6" fill="none" stroke="#242424" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12.8 19.4l2.5 2.5 4.4-5.2" fill="none" stroke="#5C643F" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-10 sm:px-6">
+      {/* luzes que flutuam atrás do cartão */}
+      <span aria-hidden className="pointer-events-none absolute left-[8%] top-[12%] h-56 w-56 animate-float rounded-full bg-wood-300/45 blur-3xl" />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-[10%] right-[6%] h-72 w-72 animate-float rounded-full bg-olive-300/45 blur-3xl"
+        style={{ animationDelay: '-2.5s' }}
+      />
+      <ThemeToggle className="absolute right-4 top-4" />
+
+      <div className="relative w-full max-w-md animate-page-in">
+        <header className="mb-7 text-center">
+          <span className="relative isolate mx-auto mb-4 grid h-16 w-16 place-items-center rounded-[1.25rem] bg-gradient-to-br from-wood-100 via-cream-50 to-olive-100 shadow-card ring-1 ring-wood-300/70">
+            <span aria-hidden className="absolute inset-0 -z-10 animate-soft-pulse rounded-[1.25rem] bg-olive-300/50 blur-2xl" />
+            <Logo className="h-9 w-9" animated />
           </span>
-          <h1 className="text-[1.625rem] font-semibold tracking-[-0.015em] text-ink">Nosso Lar</h1>
+          <h1 className="text-gradient text-[2rem] font-semibold tracking-[-0.03em]">Nosso Lar</h1>
           <p className="mt-1 text-[0.9375rem] leading-relaxed text-ink-secondary">
             Nosso enxoval, nossos planos.
           </p>
         </header>
 
-        <Card className="card-pad">
+        <Card className="card-pad shadow-pop">
           <SegmentedControl
             label="Entrar ou criar conta"
             className="flex w-full [&>button]:flex-1 [&>button]:justify-center"

@@ -7,19 +7,24 @@ import {
   LifeBuoy,
   LogIn,
   LogOut,
+  Monitor,
+  Moon,
+  Palette,
   Pencil,
   Plus,
   RotateCcw,
   Settings as SettingsIcon,
   Shield,
   Smartphone,
+  Sun,
   Tags,
   Trash2,
   Users,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/AppShell';
 import { Button, Card, CardHeader, Chip, EmptyState, Notice } from '@/components/ui/primitives';
-import { Field, Input, MoneyInput } from '@/components/ui/form';
+import { Field, Input, MoneyInput, SegmentedControl } from '@/components/ui/form';
+import { useTheme } from '@/lib/theme';
 import { CodeInput } from '@/components/ui/CodeInput';
 import { ConfirmDialog, Modal } from '@/components/ui/Modal';
 import { useSpace } from '@/contexts/SpaceContext';
@@ -53,6 +58,7 @@ export function Settings() {
   } = useSpace();
   const { user, displayName, setDisplayName, signOut } = useSession();
   const toast = useToast();
+  const tema = useTheme();
 
   const [spaceName, setSpaceName] = useState(space?.name ?? '');
   const [tagline, setTagline] = useState(space?.tagline ?? '');
@@ -128,7 +134,7 @@ export function Settings() {
         description="Nome do espaço, orçamento, categorias, participantes e preferências."
       />
 
-      <div className="flex flex-col gap-5">
+      <div className="stagger flex flex-col gap-5">
         {/* ══ Espaço ══ */}
         <Card>
           <CardHeader
@@ -578,6 +584,32 @@ export function Settings() {
               <RotateCcw className="h-4 w-4" aria-hidden />
               Restaurar itens faltantes
             </Button>
+          </div>
+        </Card>
+
+        {/* ══ Aparência ══ */}
+        <Card>
+          <CardHeader
+            icon={<Palette className="h-[1.125rem] w-[1.125rem]" aria-hidden />}
+            title="Aparência"
+            subtitle="Vale só para este aparelho"
+          />
+          <div className="flex flex-wrap items-center gap-4 px-5 py-5 sm:px-6">
+            <SegmentedControl
+              label="Tema"
+              value={tema.mode}
+              onChange={tema.setMode}
+              options={[
+                { value: 'light', label: <><Sun className="h-4 w-4" aria-hidden /> Claro</> },
+                { value: 'dark', label: <><Moon className="h-4 w-4" aria-hidden /> Escuro</> },
+                { value: 'system', label: <><Monitor className="h-4 w-4" aria-hidden /> Automático</> },
+              ]}
+            />
+            <p className="text-[0.8125rem] text-ink-muted">
+              {tema.mode === 'system'
+                ? `Seguindo o sistema — agora ${tema.resolved === 'dark' ? 'escuro' : 'claro'}.`
+                : 'Também dá para trocar pelo botão no topo da tela.'}
+            </p>
           </div>
         </Card>
 

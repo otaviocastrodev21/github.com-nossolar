@@ -372,7 +372,7 @@ export function Checklist() {
           />
         </Card>
       ) : view === 'cards' ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => (
             <ItemCardView
               key={item.id}
@@ -389,7 +389,7 @@ export function Checklist() {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="stagger flex flex-col gap-5">
           {grouped.map(({ category, items: groupItems }) => {
             const groupPending = groupItems.reduce(
               (acc, item) => acc + (Number(item.qty_pending) || 0),
@@ -704,7 +704,7 @@ function ItemCardView({
     <Card
       as="article"
       className={clsx(
-        'flex flex-col gap-3 p-4 transition-shadow hover:shadow-card-hover',
+        'card-lift flex flex-col gap-3 p-4',
         busy && 'opacity-60',
       )}
     >

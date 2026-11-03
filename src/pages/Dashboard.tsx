@@ -5,16 +5,16 @@ import {
   CalendarDays,
   CircleAlert,
   CreditCard,
-  LayoutDashboard,
   PackageCheck,
   PiggyBank,
   Plus,
   ShoppingBag,
+  Sparkles,
   Target,
   TrendingUp,
   Wallet,
 } from 'lucide-react';
-import { PageHeader } from '@/components/layout/AppShell';
+import { useIsPhone } from '@/lib/media';
 import {
   Button,
   Card,
@@ -25,10 +25,18 @@ import {
   Notice,
 } from '@/components/ui/primitives';
 import { Select } from '@/components/ui/form';
-import { HeroFigure, Meter, StackedBar, StatTile, BulletRow } from '@/components/dashboard/figures';
+import {
+  AnimatedNumber,
+  BulletRow,
+  Meter,
+  ProgressRing,
+  StackedBar,
+  StatTile,
+} from '@/components/dashboard/figures';
 import { CategorySpendChart, MonthlySpendChart } from '@/components/dashboard/charts';
 import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
+import { useSession } from '@/contexts/SessionContext';
 import { nextPriorityItems, recentPurchases } from '@/lib/calc';
 import { dateBR, integer, money, monthLongBR, percentPoints, plural, quantity, unitFor } from '@/lib/format';
 import { STATUS_FILL, PRIORITY_CHIP } from '@/lib/viz';
@@ -45,7 +53,14 @@ export function Dashboard() {
     setMonthKey,
     space,
   } = useSpace();
+  const { displayName } = useSession();
+  const phone = useIsPhone();
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+
+  const hora = new Date().getHours();
+  const saudacao = hora < 5 ? 'Boa noite' : hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+  const primeiroNome = displayName === 'Participante' ? '' : displayName.split(/\s+/)[0];
+  const emAberto = overview.itemsPending + overview.itemsPartial;
 
   const monthOptions = useMemo(() => {
     const keys = new Set<string>([monthKey]);
@@ -61,41 +76,140 @@ export function Dashboard() {
 
   return (
     <>
-      <PageHeader
-        icon={<LayoutDashboard className="h-5 w-5" aria-hidden />}
-        title="Painel"
-        description={
-          <>
-            {space?.tagline ?? 'Nosso enxoval, nossos planos.'} Todos os números vêm das compras e
-            dos orçamentos que vocês registram.
-          </>
-        }
-        actions={
-          <>
-            <label className="sr-only" htmlFor="mes-referencia">
-              Mês de referência
-            </label>
-            <Select
-              id="mes-referencia"
-              className="w-auto min-w-[9.5rem]"
-              value={monthKey}
-              onChange={(event) => setMonthKey(event.target.value)}
-            >
-              {monthOptions.map((key) => (
-                <option key={key} value={key}>
-                  {monthLongBR(key)}
-                </option>
-              ))}
-            </Select>
-            <Button variant="primary" onClick={() => setPurchaseOpen(true)}>
-              <Plus className="h-4 w-4" aria-hidden />
-              Registrar compra
-            </Button>
-          </>
-        }
-      />
+      <div className="stagger flex flex-col gap-5">
+        {/* ── Topo: saudação, anel do enxoval e os três números que mais importam ── */}
+        <Card className="overflow-hidden">
+          {/* luzes do topo */}
+          <span aria-hidden className="pointer-events-none absolute -left-16 -top-20 -z-10 h-64 w-64 rounded-full bg-wood-300/40 blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute -bottom-24 right-0 -z-10 h-72 w-72 rounded-full bg-olive-300/40 blur-3xl" />
 
-      <div className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-end justify-between gap-4 px-5 pt-5 sm:px-7 sm:pt-7">
+            <div className="min-w-0">
+              <p className="eyebrow flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-wood-500" aria-hidden />
+                {space?.name ?? 'Nosso Lar'}
+              </p>
+              <h1 className="text-gradient mt-1 text-[1.875rem] font-semibold leading-tight tracking-[-0.03em] sm:text-[2.375rem]">
+                {saudacao}
+                {primeiroNome ? `, ${primeiroNome}` : ''}.
+              </h1>
+              <p className="mt-1 text-[0.9375rem] text-ink-secondary">
+                {overview.itemsTotal === 0
+                  ? 'O checklist está pronto para começar.'
+                  : emAberto === 0
+                    ? 'Tudo comprado. A casa está pronta!'
+                    : `Faltam ${plural(emAberto, 'item', 'itens')} para completar o enxoval.`}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="sr-only" htmlFor="mes-referencia">
+                Mês de referência
+              </label>
+              <Select
+                id="mes-referencia"
+                className="w-auto min-w-[9.5rem]"
+                value={monthKey}
+                onChange={(event) => setMonthKey(event.target.value)}
+              >
+                {monthOptions.map((key) => (
+                  <option key={key} value={key}>
+                    {monthLongBR(key)}
+                  </option>
+                ))}
+              </Select>
+              <Button variant="primary" onClick={() => setPurchaseOpen(true)}>
+                <Plus className="h-4 w-4" aria-hidden />
+                Registrar compra
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center lg:gap-10">
+            <div className="flex items-center gap-4 sm:gap-6 lg:flex-col lg:items-start">
+              <ProgressRing
+                ratio={overview.completion}
+                size={phone ? 128 : 168}
+                stroke={phone ? 11 : 14}
+                label={`Conclusão do enxoval: ${percentPoints(overview.completion * 100)}`}
+              >
+                <div>
+                  <AnimatedNumber
+                    value={overview.completion * 100}
+                    format={(n) => percentPoints(n)}
+                    className="block text-[1.75rem] font-semibold leading-none tracking-[-0.03em] text-ink sm:text-[2.25rem]"
+                  />
+                  <span className="mt-1 block text-[0.75rem] font-medium text-ink-muted">concluído</span>
+                </div>
+              </ProgressRing>
+              <p className="min-w-0 max-w-[16rem] text-[0.8125rem] leading-relaxed text-ink-muted">
+                {quantity(overview.unitsBought)} de {quantity(overview.unitsPlanned)} unidades
+                planejadas. Tarefas de verificação e itens “não será comprado” ficam de fora.
+              </p>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-5">
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:first-child]:max-sm:col-span-2">
+                {[
+                  { rotulo: 'Já gasto', valor: overview.totalSpent, icone: Wallet },
+                  { rotulo: 'Falta (estimado)', valor: overview.estimatedRemaining, icone: PackageCheck },
+                  {
+                    rotulo: overview.balance === null ? 'Em parcelas' : 'Saldo',
+                    valor: overview.balance === null ? overview.committed : overview.balance,
+                    icone: overview.balance === null ? CreditCard : PiggyBank,
+                  },
+                ].map(({ rotulo, valor, icone: Icone }) => (
+                  <div
+                    key={rotulo}
+                    className="rounded-2xl border border-cream-400/70 bg-cream-50/60 px-4 py-3 shadow-[inset_0_1px_0_rgb(255_255_255/0.4)] backdrop-blur"
+                  >
+                    <dt className="flex items-center gap-1.5 text-[0.75rem] font-medium text-ink-muted">
+                      <Icone className="h-3.5 w-3.5 text-wood-500" aria-hidden />
+                      {rotulo}
+                    </dt>
+                    <dd className="mt-1 text-[1.25rem] font-semibold tracking-[-0.015em] text-ink">
+                      <AnimatedNumber value={valor} format={money} />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+
+              <div>
+                <h3 className="mb-2.5 text-[0.8125rem] font-semibold text-ink-secondary">
+                  Situação dos {integer(overview.itemsTotal)} itens
+                </h3>
+                <StackedBar
+                  total={overview.itemsTotal}
+                  segments={overview.statusMix.map((entry) => ({
+                    key: entry.status,
+                    label: STATUS_LABEL[entry.status],
+                    value: entry.count,
+                    color: STATUS_FILL[entry.status],
+                  }))}
+                />
+              </div>
+
+              {overview.tasksTotal > 0 ? (
+                <div className="rounded-xl border border-cream-400/70 bg-cream-200/50 px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[0.875rem] font-medium text-ink">
+                      Tarefas de verificação da casa
+                    </span>
+                    <span className="tnum text-[0.875rem] text-ink-secondary">
+                      {overview.tasksDone} de {overview.tasksTotal} concluídas
+                    </span>
+                  </div>
+                  <Meter
+                    ratio={overview.tasksTotal > 0 ? overview.tasksDone / overview.tasksTotal : 0}
+                    size="xs"
+                    className="mt-2"
+                    label="Progresso das tarefas de verificação"
+                  />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </Card>
+
         {/* ── Alertas de orçamento ── */}
         {budgetUndefined ? (
           <Notice
@@ -137,80 +251,13 @@ export function Dashboard() {
           </Notice>
         ))}
 
-        {/* ── Conclusão do enxoval ── */}
-        <Card className="card-pad">
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,19rem)_1fr] lg:gap-8">
-            <div>
-              <HeroFigure
-                label="Conclusão do enxoval"
-                value={percentPoints(overview.completion * 100)}
-                caption={
-                  <>
-                    {quantity(overview.unitsBought)} de {quantity(overview.unitsPlanned)} unidades
-                    planejadas
-                  </>
-                }
-              >
-                <Meter
-                  ratio={overview.completion}
-                  className="mt-3"
-                  label={`Progresso geral: ${percentPoints(overview.completion * 100)}`}
-                />
-                <p className="mt-3 text-[0.8125rem] leading-relaxed text-ink-muted">
-                  Considera apenas itens ativos: tarefas de verificação e itens marcados como “não
-                  será comprado” ficam de fora da conta.
-                </p>
-              </HeroFigure>
-            </div>
-
-            <div className="flex flex-col justify-center gap-5">
-              <div>
-                <h2 className="mb-3 text-[0.9375rem] font-semibold text-ink">
-                  Situação dos {integer(overview.itemsTotal)} itens cadastrados
-                </h2>
-                <StackedBar
-                  total={overview.itemsTotal}
-                  segments={overview.statusMix.map((entry) => ({
-                    key: entry.status,
-                    label: STATUS_LABEL[entry.status],
-                    value: entry.count,
-                    color: STATUS_FILL[entry.status],
-                  }))}
-                />
-              </div>
-
-              {overview.tasksTotal > 0 ? (
-                <div className="rounded-xl border border-cream-400 bg-cream-200/60 px-4 py-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[0.875rem] font-medium text-ink">
-                      Tarefas de verificação da casa
-                    </span>
-                    <span className="tnum text-[0.875rem] text-ink-secondary">
-                      {overview.tasksDone} de {overview.tasksTotal} concluídas
-                    </span>
-                  </div>
-                  <Meter
-                    ratio={overview.tasksTotal > 0 ? overview.tasksDone / overview.tasksTotal : 0}
-                    size="xs"
-                    className="mt-2"
-                    label="Progresso das tarefas de verificação"
-                  />
-                  <p className="mt-2 text-[0.75rem] text-ink-muted">
-                    Não entram no orçamento nem nas quantidades compradas.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </Card>
-
         {/* ── Indicadores ── */}
         <section>
           <h2 className="eyebrow mb-3">Indicadores</h2>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <div className="stagger grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatTile
               label="Total efetivamente gasto"
-              value={money(overview.totalSpent)}
+              value={<AnimatedNumber value={overview.totalSpent} format={money} />}
               icon={<Wallet className="h-4 w-4" aria-hidden />}
               sub={
                 overview.extrasSpent > 0
@@ -220,7 +267,13 @@ export function Dashboard() {
             />
             <StatTile
               label="Orçamento total"
-              value={overview.budgetTotal === null ? 'Não definido' : money(overview.budgetTotal)}
+              value={
+                overview.budgetTotal === null ? (
+                  'Não definido'
+                ) : (
+                  <AnimatedNumber value={overview.budgetTotal} format={money} />
+                )
+              }
               icon={<Target className="h-4 w-4" aria-hidden />}
               meter={
                 overview.budgetUsage !== null
@@ -243,32 +296,32 @@ export function Dashboard() {
             />
             <StatTile
               label="Saldo disponível"
-              value={overview.balance === null ? '—' : money(overview.balance)}
+              value={overview.balance === null ? '—' : <AnimatedNumber value={overview.balance} format={money} />}
               icon={<PiggyBank className="h-4 w-4" aria-hidden />}
               tone={overview.balance !== null && overview.balance < 0 ? 'critical' : null}
               sub={overview.balance === null ? 'depende do orçamento total' : undefined}
             />
             <StatTile
               label="Falta comprar (estimado)"
-              value={money(overview.estimatedRemaining)}
+              value={<AnimatedNumber value={overview.estimatedRemaining} format={money} />}
               icon={<PackageCheck className="h-4 w-4" aria-hidden />}
               sub={`${plural(overview.itemsPending + overview.itemsPartial, 'item em aberto', 'itens em aberto')}`}
             />
 
             <StatTile
               label="Itens comprados"
-              value={integer(overview.itemsDone)}
+              value={<AnimatedNumber value={overview.itemsDone} format={(n) => integer(Math.round(n))} />}
               icon={<PackageCheck className="h-4 w-4" aria-hidden />}
               sub={`de ${integer(overview.itemsTotal)} cadastrados`}
             />
             <StatTile
               label="Parcialmente comprados"
-              value={integer(overview.itemsPartial)}
+              value={<AnimatedNumber value={overview.itemsPartial} format={(n) => integer(Math.round(n))} />}
               sub="já começados, falta completar"
             />
             <StatTile
               label="Itens pendentes"
-              value={integer(overview.itemsPending)}
+              value={<AnimatedNumber value={overview.itemsPending} format={(n) => integer(Math.round(n))} />}
               sub={
                 overview.itemsExcluded > 0
                   ? `${integer(overview.itemsExcluded)} marcados como "não será comprado"`
@@ -277,7 +330,7 @@ export function Dashboard() {
             />
             <StatTile
               label="Acima do preço estimado"
-              value={integer(overview.itemsOverEstimate)}
+              value={<AnimatedNumber value={overview.itemsOverEstimate} format={(n) => integer(Math.round(n))} />}
               icon={<TrendingUp className="h-4 w-4" aria-hidden />}
               tone={overview.itemsOverEstimate > 0 ? 'warning' : null}
               sub={
@@ -289,13 +342,13 @@ export function Dashboard() {
 
             <StatTile
               label="Comprometido em parcelas"
-              value={money(overview.committed)}
+              value={<AnimatedNumber value={overview.committed} format={money} />}
               icon={<CreditCard className="h-4 w-4" aria-hidden />}
               sub="valor ainda devido em compras parceladas"
             />
             <StatTile
               label={`Compras em ${monthLongBR(monthKey)}`}
-              value={money(overview.monthSpent)}
+              value={<AnimatedNumber value={overview.monthSpent} format={money} />}
               icon={<CalendarDays className="h-4 w-4" aria-hidden />}
               meter={
                 overview.monthGoal && overview.monthGoal > 0
@@ -318,7 +371,7 @@ export function Dashboard() {
             />
             <StatTile
               label="Valor total contratado"
-              value={money(overview.contractedTotal)}
+              value={<AnimatedNumber value={overview.contractedTotal} format={money} />}
               sub="pago + parcelas a vencer"
             />
             <StatTile

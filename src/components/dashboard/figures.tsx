@@ -1,8 +1,95 @@
-import { type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { AlertTriangle, CircleAlert, TrendingDown, TrendingUp } from 'lucide-react';
 import { VIZ } from '@/lib/viz';
 import { integer, money, percentPoints } from '@/lib/format';
+import { useCountUp } from '@/lib/motion';
+
+/* ═══════════════════════════ Número que sobe ═══════════════════════════════
+   Conta de 0 até o valor ao aparecer, e desliza quando o valor muda. O texto
+   final é sempre o do formatador, então leitores de tela leem o número certo. */
+
+export function AnimatedNumber({
+  value,
+  format = integer,
+  className,
+}: {
+  value: number;
+  format?: (n: number) => string;
+  className?: string;
+}) {
+  const atual = useCountUp(value);
+  return (
+    <span className={clsx('tnum', className)} aria-label={format(value)}>
+      <span aria-hidden>{format(atual)}</span>
+    </span>
+  );
+}
+
+/* ═════════════════════════════ Anel de progresso ═══════════════════════════
+   Trilha no passo claro da rampa; o arco em degradê do oliva até a madeira. */
+
+export function ProgressRing({
+  ratio,
+  size = 168,
+  stroke = 14,
+  label,
+  children,
+}: {
+  ratio: number;
+  size?: number;
+  stroke?: number;
+  label: string;
+  children?: ReactNode;
+}) {
+  const id = useId().replace(/:/g, '');
+  const seguro = Math.max(0, Math.min(Number.isFinite(ratio) ? ratio : 0, 1));
+  const animado = useCountUp(seguro, 1400);
+  const raio = (size - stroke) / 2;
+  const volta = 2 * Math.PI * raio;
+
+  return (
+    <div
+      className="relative grid shrink-0 place-items-center"
+      style={{ width: size, height: size }}
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(seguro * 100)}
+      aria-label={label}
+    >
+      {/* halo atrás do anel */}
+      <span
+        aria-hidden
+        className="absolute inset-3 rounded-full bg-olive-400/25 blur-2xl"
+        style={{ opacity: 0.4 + animado * 0.6 }}
+      />
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden>
+        <defs>
+          <linearGradient id={`anel-${id}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="var(--series)" />
+            <stop offset="60%" stopColor="var(--series-line)" />
+            <stop offset="100%" stopColor="rgb(var(--wood-500))" />
+          </linearGradient>
+        </defs>
+        <circle cx={size / 2} cy={size / 2} r={raio} fill="none" stroke="rgb(var(--olive-200))" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={raio}
+          fill="none"
+          stroke={`url(#anel-${id})`}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={volta}
+          strokeDashoffset={volta * (1 - animado)}
+          style={{ opacity: animado > 0.001 ? 1 : 0 }}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center">{children}</div>
+    </div>
+  );
+}
 
 /* ═══════════════════════════ Número protagonista ═══════════════════════════
    Um por tela. Figuras proporcionais (nunca tabular num) no tamanho grande.   */
@@ -21,7 +108,7 @@ export function HeroFigure({
   return (
     <div className="flex flex-col gap-1">
       <p className="eyebrow">{label}</p>
-      <p className="text-[3rem] font-semibold leading-[1.05] tracking-[-0.02em] text-ink sm:text-[3.5rem]">
+      <p className="text-gradient text-[3rem] font-semibold leading-[1.05] tracking-[-0.03em] sm:text-[3.5rem]">
         {value}
       </p>
       {caption ? <p className="text-[0.875rem] text-ink-secondary">{caption}</p> : null}
@@ -71,9 +158,23 @@ export function Meter({
       aria-label={label}
     >
       <div
-        className="h-full origin-left animate-grow rounded-r-[4px] transition-[width] duration-500"
-        style={{ width: `${safe * 100}%`, background: fill }}
-      />
+        className="relative h-full origin-left animate-grow overflow-hidden rounded-r-[4px] transition-[width] duration-700"
+        style={{
+          width: `${safe * 100}%`,
+          background:
+            tone === 'default'
+              ? `linear-gradient(90deg, ${VIZ.series}, ${VIZ.seriesLine})`
+              : fill,
+        }}
+      >
+        {/* reflexo que corre pela barra, só no tamanho maior */}
+        {size === 'md' && safe > 0 ? (
+          <span
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-full animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -106,13 +207,17 @@ export function StatTile({
   return (
     <div
       className={clsx(
-        'card flex flex-col gap-2 p-4 transition-shadow hover:shadow-card-hover sm:p-5',
+        'card card-lift group flex flex-col gap-2 p-4 sm:p-5',
         className,
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-[0.8125rem] font-medium leading-snug text-ink-secondary">{label}</p>
-        {icon ? <span className="shrink-0 text-wood-500">{icon}</span> : null}
+        {icon ? (
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-wood-100 to-olive-100 text-wood-600 ring-1 ring-cream-400/80 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
+            {icon}
+          </span>
+        ) : null}
       </div>
 
       <p
@@ -200,7 +305,7 @@ export function StackedBar({
   return (
     <div className="flex flex-col gap-3">
       <div
-        className="flex h-6 w-full gap-[2px] overflow-hidden rounded-lg"
+        className="flex h-7 w-full gap-[2px] overflow-hidden rounded-lg"
         style={{ background: VIZ.track }}
         role="img"
         aria-label={visible
@@ -215,7 +320,7 @@ export function StackedBar({
             <div
               key={segment.key}
               className={clsx(
-                'flex min-w-0 items-center justify-center overflow-hidden transition-[flex-basis] duration-500',
+                'flex min-w-0 origin-left animate-grow items-center justify-center overflow-hidden transition-[flex-basis,filter] duration-500 hover:brightness-110',
                 index === 0 && 'rounded-l-lg',
                 index === visible.length - 1 && 'rounded-r-lg',
               )}
@@ -225,7 +330,7 @@ export function StackedBar({
               {fits ? (
                 <span
                   className="px-1 text-[0.6875rem] font-semibold tabular-nums"
-                  style={{ color: index >= 1 ? '#F7F6F2' : '#242424' }}
+                  style={{ color: index >= 1 ? VIZ.surface : VIZ.textPrimary }}
                 >
                   {integer(segment.value)}
                 </span>

@@ -1,52 +1,66 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
+      // Cada tom é uma variável (canais RGB): o tema escuro troca os valores em
+      // index.css, e todas as classes — bg-cream-100, text-ink, ring-olive-300 —
+      // acompanham sem precisar de `dark:` em cada componente. As rampas são
+      // invertidas no escuro, então "50 sobre 600" continua sendo claro sobre
+      // escuro ou escuro sobre claro, sempre com contraste.
       colors: {
         // ——— Identidade visual "Nosso Lar" ———
-        // Branco quente predominante
+        // Superfícies quentes (no claro, branco quente; no escuro, grafite quente)
         cream: {
-          50: '#FDFCFA',
-          100: '#F7F6F2', // branco quente (marca)
-          200: '#F2EFE8',
-          300: '#EFECE4',
-          400: '#E6E3DA', // hairline / gridlines
+          50: 'rgb(var(--cream-50) / <alpha-value>)',
+          100: 'rgb(var(--cream-100) / <alpha-value>)',
+          200: 'rgb(var(--cream-200) / <alpha-value>)',
+          300: 'rgb(var(--cream-300) / <alpha-value>)',
+          400: 'rgb(var(--cream-400) / <alpha-value>)',
         },
-        // Bege / greige
+        // Bege / greige: bordas e neutros
         greige: {
-          100: '#EDEAE3',
-          200: '#E2DED5',
-          300: '#D6D0C6', // bege/greige (marca)
-          400: '#C3BCAE',
-          500: '#A8A196',
+          100: 'rgb(var(--greige-100) / <alpha-value>)',
+          200: 'rgb(var(--greige-200) / <alpha-value>)',
+          300: 'rgb(var(--greige-300) / <alpha-value>)',
+          400: 'rgb(var(--greige-400) / <alpha-value>)',
+          500: 'rgb(var(--greige-500) / <alpha-value>)',
         },
         // Madeira clara
         wood: {
-          100: '#FAEEDF',
-          200: '#F0DCC3',
-          300: '#DABF9B',
-          400: '#C6A77D', // madeira clara (marca)
-          500: '#AE8C5B',
-          600: '#906D3B', // 4.38:1 — ok para texto
+          100: 'rgb(var(--wood-100) / <alpha-value>)',
+          200: 'rgb(var(--wood-200) / <alpha-value>)',
+          300: 'rgb(var(--wood-300) / <alpha-value>)',
+          400: 'rgb(var(--wood-400) / <alpha-value>)',
+          500: 'rgb(var(--wood-500) / <alpha-value>)',
+          600: 'rgb(var(--wood-600) / <alpha-value>)',
         },
-        // Verde-oliva: progresso, conclusão e ações positivas (rampa ordinal validada)
+        // Verde-oliva: progresso, conclusão e ações positivas
         olive: {
-          100: '#EFF2E7',
-          200: '#DEE2D1',
-          300: '#C1C8AE',
-          400: '#9BA382', // 2.44:1 — fills com rótulo/tabela
-          500: '#78815C', // 3.81:1 — série principal dos gráficos
-          600: '#5C643F', // 5.80:1 — linhas, texto de apoio
-          700: '#434A2A', // 8.62:1 — passo final da rampa
-          800: '#2B3117',
+          100: 'rgb(var(--olive-100) / <alpha-value>)',
+          200: 'rgb(var(--olive-200) / <alpha-value>)',
+          300: 'rgb(var(--olive-300) / <alpha-value>)',
+          400: 'rgb(var(--olive-400) / <alpha-value>)',
+          500: 'rgb(var(--olive-500) / <alpha-value>)',
+          600: 'rgb(var(--olive-600) / <alpha-value>)',
+          700: 'rgb(var(--olive-700) / <alpha-value>)',
+          800: 'rgb(var(--olive-800) / <alpha-value>)',
         },
-        // Preto fosco: textos e elementos pontuais
+        // Tinta
         ink: {
-          DEFAULT: '#242424',
-          secondary: '#5C5A53',
-          muted: '#7A776D',
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          secondary: 'rgb(var(--ink-secondary) / <alpha-value>)',
+          muted: 'rgb(var(--ink-muted) / <alpha-value>)',
         },
+        // Fundos de aviso, um por status
+        tint: {
+          warning: 'rgb(var(--tint-warning) / <alpha-value>)',
+          serious: 'rgb(var(--tint-serious) / <alpha-value>)',
+          critical: 'rgb(var(--tint-critical) / <alpha-value>)',
+        },
+        // Véu atrás de modais e gavetas: escuro nos dois temas
+        scrim: '#0E0D0B',
         // Status (escala fixa, sempre com ícone + rótulo)
         status: {
           good: '#0CA30C',
@@ -70,9 +84,10 @@ export default {
       },
       borderRadius: { xl: '0.875rem', '2xl': '1.125rem', '3xl': '1.5rem' },
       boxShadow: {
-        card: '0 1px 2px rgba(36,36,36,0.04), 0 4px 16px -8px rgba(36,36,36,0.10)',
-        'card-hover': '0 2px 4px rgba(36,36,36,0.05), 0 10px 28px -10px rgba(36,36,36,0.16)',
-        pop: '0 8px 36px -10px rgba(36,36,36,0.28)',
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        pop: 'var(--shadow-pop)',
+        glow: '0 0 0 1px rgb(var(--olive-500) / 0.25), 0 8px 30px -6px rgb(var(--olive-500) / 0.45)',
       },
       keyframes: {
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
@@ -85,12 +100,38 @@ export default {
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         grow: { from: { transform: 'scaleX(0)' }, to: { transform: 'scaleX(1)' } },
+        // troca de tela: sobe, aparece e sai do desfoque
+        'page-in': {
+          from: { opacity: '0', transform: 'translateY(10px)', filter: 'blur(4px)' },
+          to: { opacity: '1', transform: 'none', filter: 'none' },
+        },
+        'pop-in': {
+          '0%': { opacity: '0', transform: 'scale(0.92)' },
+          '60%': { opacity: '1', transform: 'scale(1.02)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-4px)' },
+        },
+        shimmer: { from: { transform: 'translateX(-100%)' }, to: { transform: 'translateX(100%)' } },
+        draw: { from: { strokeDashoffset: 'var(--draw-length, 60)' }, to: { strokeDashoffset: '0' } },
+        'soft-pulse': {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.55', transform: 'scale(0.96)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 180ms ease-out both',
         'rise-in': 'rise-in 220ms cubic-bezier(0.22,1,0.36,1) both',
         'slide-up': 'slide-up 240ms cubic-bezier(0.22,1,0.36,1) both',
-        grow: 'grow 520ms cubic-bezier(0.22,1,0.36,1) both',
+        grow: 'grow 900ms cubic-bezier(0.22,1,0.36,1) both',
+        'page-in': 'page-in 420ms cubic-bezier(0.22,1,0.36,1) both',
+        'pop-in': 'pop-in 420ms cubic-bezier(0.22,1,0.36,1) both',
+        float: 'float 5s ease-in-out infinite',
+        shimmer: 'shimmer 2.4s ease-in-out infinite',
+        draw: 'draw 900ms cubic-bezier(0.65,0,0.35,1) both',
+        'soft-pulse': 'soft-pulse 1.6s ease-in-out infinite',
       },
     },
   },

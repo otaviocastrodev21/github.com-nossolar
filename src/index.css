@@ -7,41 +7,215 @@
    Branco quente predominante, bege e madeira nos detalhes, verde-oliva para
    progresso e conclusão, preto fosco só em texto e pontuações.
 
-   A paleta de gráficos é uma rampa ordinal de um único matiz derivada do
-   verde-oliva da marca (#7D8467) e validada contra a superfície #F7F6F2:
-   lightness monótona, passos >= 0.06 de ΔL, ponta clara em 2,44:1, matiz único.
+   Dois temas com os mesmos nomes de tom. Os tons são canais RGB para que o
+   Tailwind aplique transparência (bg-cream-100/80). No escuro as rampas são
+   invertidas: o passo 50 é o mais claro no claro e o mais elevado no escuro,
+   e o 600 do oliva é escuro no claro e claro no escuro — por isso um botão
+   "bg-olive-600 text-cream-50" tem contraste nos dois.
+
+   A paleta de gráficos é uma rampa ordinal de um único matiz (o oliva da
+   marca). No escuro a rampa também inverte: quanto mais comprado, mais
+   luminoso, que é o que o olho espera sobre fundo escuro.
    =========================================================================== */
 :root {
   color-scheme: light;
+  --cream-50: 253 252 250;
+  --cream-100: 247 246 242;
+  --cream-200: 242 239 232;
+  --cream-300: 239 236 228;
+  --cream-400: 230 227 218;
+  --greige-100: 237 234 227;
+  --greige-200: 226 222 213;
+  --greige-300: 214 208 198;
+  --greige-400: 195 188 174;
+  --greige-500: 168 161 150;
+  --wood-100: 250 238 223;
+  --wood-200: 240 220 195;
+  --wood-300: 218 191 155;
+  --wood-400: 198 167 125;
+  --wood-500: 174 140 91;
+  --wood-600: 144 109 59;
+  --olive-100: 239 242 231;
+  --olive-200: 222 226 209;
+  --olive-300: 193 200 174;
+  --olive-400: 155 163 130;
+  --olive-500: 120 129 92;
+  --olive-600: 92 100 63;
+  --olive-700: 67 74 42;
+  --olive-800: 43 49 23;
+  --ink: 36 36 36;
+  --ink-secondary: 92 90 83;
+  --ink-muted: 122 119 109;
+  --tint-warning: 255 248 230;
+  --tint-serious: 253 242 236;
+  --tint-critical: 253 240 240;
 
-  /* Superfícies */
-  --surface-page: #efece4;
-  --surface-1: #f7f6f2; /* superfície dos cards e dos gráficos */
-  --surface-2: #fdfcfa;
-  --hairline: #e6e3da;
-
-  /* Tinta */
-  --text-primary: #242424;
-  --text-secondary: #5c5a53;
-  --text-muted: #7a776d;
-
-  /* Série dos gráficos (um matiz, rampa validada) */
+  /* Gráficos */
+  --viz-surface: #f7f6f2;
+  --viz-hairline: #e6e3da;
+  --viz-text-primary: #242424;
+  --viz-text-secondary: #5c5a53;
+  --viz-text-muted: #7a776d;
   --series: #78815c;
   --series-line: #5c643f;
-  --series-wash: rgba(120, 129, 92, 0.1);
+  --series-wash: rgba(120, 129, 92, 0.16);
   --track: #eff2e7;
-
-  /* Rampa ordinal de progresso: pendente -> parcial -> comprado */
+  --reference: #c3bcae;
   --step-pendente: #9ba382;
   --step-parcial: #78815c;
   --step-comprado: #434a2a;
   --step-excluido: #c3bcae;
+  --step-estimado: #c1c8ae;
 
-  /* Status (escala fixa, sempre com ícone + rótulo) */
+  /* Profundidade */
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.65), 0 1px 2px rgb(36 36 36 / 0.04),
+    0 8px 24px -12px rgb(36 36 36 / 0.14);
+  --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 2px 4px rgb(36 36 36 / 0.05),
+    0 18px 40px -14px rgb(36 36 36 / 0.22);
+  --shadow-pop: 0 12px 44px -12px rgb(36 36 36 / 0.32);
+  --glass: 0.72;
+  --spot: rgb(198 167 125 / 0.16);
+  --aurora-a: rgb(214 170 112 / 0.5);
+  --aurora-b: rgb(145 158 105 / 0.42);
+  --aurora-c: rgb(240 214 180 / 0.7);
+  --grain-opacity: 0.035;
+  --focus: #5c643f;
+
+  /* Status (escala fixa, igual nos dois temas, sempre com ícone + rótulo) */
   --status-good: #0ca30c;
   --status-warning: #fab219;
   --status-serious: #ec835a;
   --status-critical: #d03b3b;
+  --text-muted: rgb(var(--ink-muted));
+}
+
+/* Escuro: escolhido pela pessoa (.dark) ou pelo sistema, se ela não escolheu. */
+.dark {
+  color-scheme: dark;
+  --cream-50: 38 37 32;
+  --cream-100: 29 28 25;
+  --cream-200: 25 24 21;
+  --cream-300: 18 17 16;
+  --cream-400: 48 46 41;
+  --greige-100: 42 40 35;
+  --greige-200: 51 48 42;
+  --greige-300: 63 60 53;
+  --greige-400: 82 78 69;
+  --greige-500: 113 107 96;
+  --wood-100: 48 38 26;
+  --wood-200: 63 50 34;
+  --wood-300: 100 79 51;
+  --wood-400: 138 108 68;
+  --wood-500: 194 159 110;
+  --wood-600: 221 189 140;
+  --olive-100: 35 41 25;
+  --olive-200: 45 52 33;
+  --olive-300: 74 83 51;
+  --olive-400: 111 122 79;
+  --olive-500: 151 162 108;
+  --olive-600: 174 186 130;
+  --olive-700: 198 208 157;
+  --olive-800: 221 229 186;
+  --ink: 241 238 230;
+  --ink-secondary: 196 191 179;
+  --ink-muted: 156 150 138;
+  --tint-warning: 51 41 26;
+  --tint-serious: 51 35 28;
+  --tint-critical: 54 31 31;
+
+  --viz-surface: #1d1c19;
+  --viz-hairline: #302e29;
+  --viz-text-primary: #f1eee6;
+  --viz-text-secondary: #c4bfb3;
+  --viz-text-muted: #9c968a;
+  --series: #97a26c;
+  --series-line: #b5c086;
+  --series-wash: rgba(151, 162, 108, 0.2);
+  --track: #2a3020;
+  --reference: #5a554b;
+  --step-pendente: #535c3b;
+  --step-parcial: #808b5b;
+  --step-comprado: #b8c38a;
+  --step-excluido: #4a463e;
+  --step-estimado: #6f7a4f;
+
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.3),
+    0 12px 32px -14px rgb(0 0 0 / 0.6);
+  --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.35),
+    0 22px 48px -16px rgb(0 0 0 / 0.7);
+  --shadow-pop: 0 16px 50px -12px rgb(0 0 0 / 0.75);
+  --glass: 0.7;
+  --spot: rgb(174 186 130 / 0.12);
+  --aurora-a: rgb(150 112 62 / 0.38);
+  --aurora-b: rgb(111 126 70 / 0.36);
+  --aurora-c: rgb(48 38 26 / 0.6);
+  --grain-opacity: 0.05;
+  --focus: #aeba82;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --cream-50: 38 37 32;
+    --cream-100: 29 28 25;
+    --cream-200: 25 24 21;
+    --cream-300: 18 17 16;
+    --cream-400: 48 46 41;
+    --greige-100: 42 40 35;
+    --greige-200: 51 48 42;
+    --greige-300: 63 60 53;
+    --greige-400: 82 78 69;
+    --greige-500: 113 107 96;
+    --wood-100: 48 38 26;
+    --wood-200: 63 50 34;
+    --wood-300: 100 79 51;
+    --wood-400: 138 108 68;
+    --wood-500: 194 159 110;
+    --wood-600: 221 189 140;
+    --olive-100: 35 41 25;
+    --olive-200: 45 52 33;
+    --olive-300: 74 83 51;
+    --olive-400: 111 122 79;
+    --olive-500: 151 162 108;
+    --olive-600: 174 186 130;
+    --olive-700: 198 208 157;
+    --olive-800: 221 229 186;
+    --ink: 241 238 230;
+    --ink-secondary: 196 191 179;
+    --ink-muted: 156 150 138;
+    --tint-warning: 51 41 26;
+    --tint-serious: 51 35 28;
+    --tint-critical: 54 31 31;
+  
+    --viz-surface: #1d1c19;
+    --viz-hairline: #302e29;
+    --viz-text-primary: #f1eee6;
+    --viz-text-secondary: #c4bfb3;
+    --viz-text-muted: #9c968a;
+    --series: #97a26c;
+    --series-line: #b5c086;
+    --series-wash: rgba(151, 162, 108, 0.2);
+    --track: #2a3020;
+    --reference: #5a554b;
+    --step-pendente: #535c3b;
+    --step-parcial: #808b5b;
+    --step-comprado: #b8c38a;
+    --step-excluido: #4a463e;
+    --step-estimado: #6f7a4f;
+  
+    --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.3),
+      0 12px 32px -14px rgb(0 0 0 / 0.6);
+    --shadow-card-hover: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 2px 4px rgb(0 0 0 / 0.35),
+      0 22px 48px -16px rgb(0 0 0 / 0.7);
+    --shadow-pop: 0 16px 50px -12px rgb(0 0 0 / 0.75);
+    --glass: 0.7;
+    --spot: rgb(174 186 130 / 0.12);
+    --aurora-a: rgb(150 112 62 / 0.38);
+    --aurora-b: rgb(111 126 70 / 0.36);
+    --aurora-c: rgb(48 38 26 / 0.6);
+    --grain-opacity: 0.05;
+    --focus: #aeba82;
+  }
 }
 
 * {
@@ -53,19 +227,63 @@ html {
   /* O iOS aumenta o texto sozinho ao girar o aparelho; o layout já cuida disso. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  background: rgb(var(--cream-300));
 }
 
 body {
   margin: 0;
-  background: var(--surface-page);
-  color: var(--text-primary);
+  min-height: 100dvh;
+  background: rgb(var(--cream-300));
+  color: rgb(var(--ink));
   font-family:
-    Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial,
-    sans-serif;
+    'Inter Variable', Inter, 'Segoe UI Variable', 'Segoe UI', system-ui, -apple-system, Roboto,
+    Helvetica, Arial, sans-serif;
   font-size: 15px;
   line-height: 1.55;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition:
+    background-color 300ms ease,
+    color 300ms ease;
+}
+
+/* ── Aurora: luz quente ao fundo, devagar, atrás de tudo ─────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -25vmax;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 32vmax at 12% 8%, var(--aurora-a), transparent 70%),
+    radial-gradient(42vmax 36vmax at 92% 18%, var(--aurora-b), transparent 70%),
+    radial-gradient(48vmax 40vmax at 60% 100%, var(--aurora-c), transparent 70%);
+  animation: aurora 38s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* Grão fino: tira o aspecto "chapado" das superfícies de vidro. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes aurora {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate3d(3vmax, -2vmax, 0) rotate(8deg) scale(1.06);
+  }
+  100% {
+    transform: translate3d(-3vmax, 2vmax, 0) rotate(-6deg) scale(1.02);
+  }
 }
 
 img {
@@ -76,9 +294,13 @@ img {
   display: none !important;
 }
 
+::selection {
+  background: rgb(var(--olive-300) / 0.7);
+}
+
 /* Foco visível e consistente em tudo que é interativo */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid #5c643f;
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
   border-radius: 0.5rem;
 }
@@ -93,26 +315,77 @@ img {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #d6d0c6;
-    border: 3px solid var(--surface-page);
+    background: rgb(var(--greige-300));
+    border: 3px solid transparent;
+    background-clip: padding-box;
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #c3bcae;
+    background: rgb(var(--greige-400));
+    background-clip: padding-box;
   }
 }
 
 @layer components {
-  /* Cartão padrão: cantos arredondados, sombra discreta */
+  /* Cartão de vidro: deixa a aurora passar, desfocada, e acende uma luz onde
+     o mouse está (ver useSpotlight). min-w-0: dentro de grid ou flex, um
+     cartão herda "min-width: auto" e cresce até o conteúdo mais largo,
+     empurrando a página para o lado. */
   .card {
-    /* min-w-0: um cartão dentro de grid ou flex herda "min-width: auto" e
-       cresce até o conteúdo mais largo (um gráfico, uma tabela), empurrando a
-       página para o lado. Com isto ele aceita a largura que a coluna tem. */
-    @apply min-w-0 rounded-2xl border border-cream-400/70 bg-cream-100 shadow-card;
+    @apply relative isolate min-w-0 rounded-2xl border border-cream-400/70 shadow-card;
+    background: rgb(var(--cream-100) / var(--glass));
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    backdrop-filter: blur(18px) saturate(1.35);
+    transition:
+      box-shadow 250ms ease,
+      transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 250ms ease;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      420px circle at var(--mx, 50%) var(--my, 50%),
+      var(--spot),
+      transparent 60%
+    );
+    transition: opacity 300ms ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .card:hover::after {
+      opacity: 1;
+    }
+    .card:hover {
+      border-color: rgb(var(--greige-300) / 0.9);
+    }
+  }
+
+  /* Cartão que se levanta ao passar o mouse: indicadores, cards de item. */
+  .card-lift {
+    @apply hover:shadow-card-hover;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card-lift:hover {
+      transform: translateY(-2px);
+    }
   }
 
   .card-pad {
     @apply p-5 sm:p-6;
+  }
+
+  /* Superfície de vidro para barras fixas (topo, lateral, rodapé). */
+  .glass-bar {
+    background: rgb(var(--cream-100) / 0.66);
+    -webkit-backdrop-filter: blur(22px) saturate(1.5);
+    backdrop-filter: blur(22px) saturate(1.5);
   }
 
   /* Rótulo de seção */
@@ -120,12 +393,61 @@ img {
     @apply text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-ink-muted;
   }
 
+  /* Título com degradê da marca */
+  .text-gradient {
+    background: linear-gradient(
+      100deg,
+      rgb(var(--ink)) 0%,
+      rgb(var(--olive-700)) 55%,
+      rgb(var(--wood-500)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Botão principal: degradê do oliva, brilho no topo e um reflexo que passa
+     ao passar o mouse. */
+  .btn-primary {
+    @apply relative overflow-hidden;
+    background-image: linear-gradient(
+      180deg,
+      rgb(var(--olive-500)) 0%,
+      rgb(var(--olive-600)) 55%,
+      rgb(var(--olive-700)) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      0 1px 2px rgb(var(--olive-800) / 0.25),
+      0 6px 18px -8px rgb(var(--olive-600) / 0.7);
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover::after {
+      transform: translateX(120%);
+    }
+    .btn-primary:hover {
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.25),
+        0 2px 4px rgb(var(--olive-800) / 0.25),
+        0 12px 26px -10px rgb(var(--olive-600) / 0.85);
+    }
+  }
+
   /* Campos de formulário */
   .field {
-    @apply w-full rounded-xl border border-greige-300 bg-cream-50 px-3.5 py-2.5 text-[0.9375rem]
+    @apply w-full rounded-xl border border-greige-300 bg-cream-50/80 px-3.5 py-2.5 text-[0.9375rem]
            text-ink placeholder:text-ink-muted/70 transition
-           focus:border-olive-500 focus:bg-white focus:outline-none
-           focus:ring-2 focus:ring-olive-500/25
+           focus:border-olive-500 focus:bg-cream-50 focus:outline-none
+           focus:ring-4 focus:ring-olive-500/15
            disabled:cursor-not-allowed disabled:bg-greige-100 disabled:text-ink-muted;
   }
 
@@ -137,7 +459,7 @@ img {
   }
 
   .field-error {
-    @apply border-status-critical focus:border-status-critical focus:ring-status-critical/25;
+    @apply border-status-critical focus:border-status-critical focus:ring-status-critical/20;
   }
 
   .label {
@@ -165,17 +487,59 @@ img {
   .scroll-x-bleed {
     @apply -mx-5 px-5 sm:mx-0 sm:px-0;
   }
+
+  /* Filhos entram em sequência, um depois do outro. */
+  .stagger > * {
+    animation: rise-in-stagger 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 90ms;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 135ms;
+  }
+  .stagger > *:nth-child(5) {
+    animation-delay: 180ms;
+  }
+  .stagger > *:nth-child(6) {
+    animation-delay: 225ms;
+  }
+  .stagger > *:nth-child(7) {
+    animation-delay: 270ms;
+  }
+  .stagger > *:nth-child(8) {
+    animation-delay: 315ms;
+  }
+  .stagger > *:nth-child(n + 9) {
+    animation-delay: 360ms;
+  }
+}
+
+/* Termina sem transform: um transform deixado no fim faria de cada filho o
+   bloco de referência dos "fixed" e "sticky" lá dentro. */
+@keyframes rise-in-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Recharts: tipografia e eixos recessivos, sem tracejado */
 .recharts-cartesian-axis-tick-value {
   font-size: 11.5px;
-  fill: var(--text-muted);
+  fill: var(--viz-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .recharts-cartesian-grid line {
-  stroke: var(--hairline);
+  stroke: var(--viz-hairline);
   stroke-dasharray: none;
 }
 
@@ -192,6 +556,9 @@ img {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  body::before {
+    animation: none;
+  }
 }
 
 /* Impressão: relatórios saem legíveis em preto e branco */
@@ -199,12 +566,18 @@ img {
   body {
     background: #fff;
   }
+  body::before,
+  body::after {
+    display: none;
+  }
   .no-print {
     display: none !important;
   }
   .card {
     box-shadow: none;
     border-color: #ccc;
+    background: #fff;
+    backdrop-filter: none;
     break-inside: avoid;
   }
 }
