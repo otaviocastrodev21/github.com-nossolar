@@ -18,7 +18,7 @@
  */
 
 const { app, BrowserWindow, Menu, dialog, net, protocol, shell } = require('electron');
-const { readFile, writeFile } = require('node:fs/promises');
+const { mkdir, readFile, writeFile } = require('node:fs/promises');
 const { existsSync } = require('node:fs');
 const { extname, join, normalize, resolve, sep } = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -318,7 +318,7 @@ async function createWindow() {
 
   // `npm run desktop:verify`: abre, espera a interface assentar, confere e sai.
   // Serve para validar o empacotamento em CI, sem ninguém precisar clicar.
-  if (!app.isPackaged && process.argv.includes('--smoke')) {
+  if (process.argv.includes('--smoke')) {
     window.webContents.once('did-finish-load', async () => {
       const sonda = `(() => ({
         montou: !!document.querySelector('#root')?.firstElementChild,
@@ -346,7 +346,18 @@ async function createWindow() {
         // sucesso. Agora é preciso ter chegado ao painel.
         const ok =
           report.montou && report.ponte && report.origem === appOrigin && report.naApp;
-        console.log(JSON.stringify({ ok, etapas, ...report }, null, 2));
+        const saida = JSON.stringify({ ok, etapas, ...report }, null, 2);
+        console.log(saida);
+        // No Windows, um executável de GUI não entrega stdout a quem o
+        // chamou. Sem isto, a verificação do pacote seria cega.
+        try {
+          // Na primeira execução a pasta ainda não existe.
+          const destino = app.getPath('userData');
+          await mkdir(destino, { recursive: true });
+          await writeFile(join(destino, 'smoke-report.json'), saida, 'utf8');
+        } catch {
+          /* o relatório no console já serve quando dá para lê-lo */
+        }
         app.exit(ok ? 0 : 1);
       } catch (error) {
         console.error('Falha na verificação:', error);

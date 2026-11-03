@@ -87,8 +87,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const { data } = await supabase.auth.getSession();
 
         if (data.session) {
-          if (!cancelado) setSession(data.session);
-          return;
+          // `getSession` apenas lê o que está guardado no aparelho; não
+          // pergunta ao servidor se a identidade ainda existe. Sem cadastro,
+          // essa identidade é a única que temos — se ela tiver desaparecido do
+          // banco, toda escrita falha por chave estrangeira e o "Tentar
+          // novamente" nunca sai do lugar. Então confirmamos antes de confiar.
+          const { error: checkError } = await supabase.auth.getUser();
+
+          // Só descarta quando o servidor nega a identidade. Um erro de rede
+          // não tem status, e NÃO pode derrubar a sessão: ficar sem internet
+          // apagaria o único acesso deste aparelho ao espaço.
+          const identidadeNegada = checkError?.status === 401 || checkError?.status === 403;
+
+          if (!identidadeNegada) {
+            if (!cancelado) setSession(data.session);
+            return;
+          }
+
+          console.warn(
+            '[Nosso Lar] A identidade guardada não vale mais; abrindo outra.',
+            checkError?.message,
+          );
+          await supabase.auth.signOut({ scope: 'local' });
+          if (cancelado) return;
         }
 
         // Primeiro uso neste aparelho: abre a identidade silenciosamente.
