@@ -234,6 +234,11 @@ export interface MonthBreakdown {
 
 export interface Overview {
   // ── Itens
+  /**
+   * Produtos que contam no enxoval. Os marcados como "não será comprado"
+   * ficam fora — do total, dos concluídos e da porcentagem — e aparecem só
+   * em `itemsExcluded`.
+   */
   itemsTotal: number;
   itemsDone: number;
   itemsPartial: number;
@@ -298,6 +303,7 @@ export function computeOverview(input: OverviewInput): Overview {
   const tasks = items.filter((i) => i.is_task);
 
   // ── Contagens de itens
+  // "Não será comprado" sai da conta: não é pendência nem conclusão.
   const itemsDone = products.filter((i) => i.status === 'comprado').length;
   const itemsPartial = products.filter((i) => i.status === 'parcial').length;
   const itemsPending = products.filter((i) => i.status === 'pendente').length;
@@ -412,7 +418,7 @@ export function computeOverview(input: OverviewInput): Overview {
       budget,
       usage,
       level: usage === null ? null : usage >= 1 ? 'estourado' : usage >= 0.8 ? 'atencao' : 'ok',
-      itemsTotal: ownProducts.length,
+      itemsTotal: ownActive.length,
       itemsDone: ownProducts.filter((i) => i.status === 'comprado').length,
       itemsPartial: ownProducts.filter((i) => i.status === 'parcial').length,
       itemsPending: ownProducts.filter((i) => i.status === 'pendente').length,
@@ -458,7 +464,7 @@ export function computeOverview(input: OverviewInput): Overview {
   const byMonth = [...monthMap.values()].sort((a, b) => a.monthKey.localeCompare(b.monthKey));
 
   return {
-    itemsTotal: products.length,
+    itemsTotal: products.length - itemsExcluded,
     itemsDone,
     itemsPartial,
     itemsPending,
@@ -501,7 +507,6 @@ export function computeOverview(input: OverviewInput): Overview {
       { status: 'comprado' as ItemStatus, count: itemsDone },
       { status: 'parcial' as ItemStatus, count: itemsPartial },
       { status: 'pendente' as ItemStatus, count: itemsPending },
-      { status: 'nao_sera_comprado' as ItemStatus, count: itemsExcluded },
     ],
   };
 }

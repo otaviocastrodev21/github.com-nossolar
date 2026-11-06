@@ -186,6 +186,12 @@ export function Dashboard() {
                     color: STATUS_FILL[entry.status],
                   }))}
                 />
+                {overview.itemsExcluded > 0 ? (
+                  <p className="mt-2 text-[0.75rem] text-ink-muted">
+                    {plural(overview.itemsExcluded, 'item marcado', 'itens marcados')} como “não será
+                    comprado” {overview.itemsExcluded === 1 ? 'fica' : 'ficam'} fora da conta.
+                  </p>
+                ) : null}
               </div>
 
               {overview.tasksTotal > 0 ? (
@@ -312,7 +318,7 @@ export function Dashboard() {
               label="Itens comprados"
               value={<AnimatedNumber value={overview.itemsDone} format={(n) => integer(Math.round(n))} />}
               icon={<PackageCheck className="h-4 w-4" aria-hidden />}
-              sub={`de ${integer(overview.itemsTotal)} cadastrados`}
+              sub={`de ${integer(overview.itemsTotal)} no enxoval`}
             />
             <StatTile
               label="Parcialmente comprados"
@@ -324,7 +330,7 @@ export function Dashboard() {
               value={<AnimatedNumber value={overview.itemsPending} format={(n) => integer(Math.round(n))} />}
               sub={
                 overview.itemsExcluded > 0
-                  ? `${integer(overview.itemsExcluded)} marcados como "não será comprado"`
+                  ? `${integer(overview.itemsExcluded)} "não será comprado" fora da conta`
                   : 'nenhuma unidade comprada ainda'
               }
             />

@@ -392,6 +392,11 @@ describe('itens fora do plano de compras', () => {
     expect(overview.estimatedRemaining).toBe(3000); // só o sofá
     expect(overview.itemsExcluded).toBe(1);
     expect(overview.unitsPlanned).toBe(1); // o excluído sai do denominador
+    expect(overview.itemsTotal).toBe(1); // e da contagem de itens
+    expect(overview.statusMix.map((s) => s.status)).not.toContain('nao_sera_comprado');
+    // a TV (cozinha, padrão do makeItem) também sai da conta da categoria
+    expect(overview.byCategory.find((c) => c.categoryId === CAT.cozinha.id)?.itemsTotal).toBe(0);
+    expect(overview.byCategory.find((c) => c.categoryId === CAT.quarto.id)?.itemsTotal).toBe(1);
   });
 
   it('mantém no total gasto a compra já feita de um item depois excluído', () => {

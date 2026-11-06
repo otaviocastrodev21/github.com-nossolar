@@ -147,7 +147,11 @@ export function Checklist() {
         description={
           <>
             {integer(overview.itemsTotal)} produtos e {integer(overview.tasksTotal)} tarefas de
-            verificação. As quantidades e prioridades iniciais são sugestões — editem à vontade.
+            verificação
+            {overview.itemsExcluded > 0
+              ? ` (${integer(overview.itemsExcluded)} marcados como “não será comprado” ficam fora da conta)`
+              : ''}
+            . As quantidades e prioridades iniciais são sugestões — editem à vontade.
           </>
         }
         actions={
@@ -392,6 +396,7 @@ export function Checklist() {
       ) : (
         <div className="stagger flex flex-col gap-5">
           {grouped.map(({ category, items: groupItems }) => {
+            const groupOut = groupItems.filter((item) => item.excluded && !item.is_task).length;
             const groupPending = groupItems.reduce(
               (acc, item) => acc + (Number(item.qty_pending) || 0),
               0,
@@ -406,7 +411,8 @@ export function Checklist() {
                     {category.name}
                   </h2>
                   <span className="tnum text-[0.8125rem] text-ink-muted">
-                    {integer(groupItems.length)} itens
+                    {integer(groupItems.length - groupOut)} itens
+                    {groupOut > 0 ? ` · ${integer(groupOut)} fora da conta` : ''}
                     {groupPending > 0 ? ` · faltam ${quantity(groupPending)} unidades` : ''}
                   </span>
                 </div>
