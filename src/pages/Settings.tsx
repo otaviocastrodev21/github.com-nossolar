@@ -611,6 +611,9 @@ export function Settings() {
                 : 'Também dá para trocar pelo botão no topo da tela.'}
             </p>
           </div>
+          <p className="border-t border-cream-400/60 px-5 py-3 text-[0.75rem] text-ink-muted sm:px-6">
+            Versão deste aparelho: <span className="tnum font-medium text-ink-secondary">{__APP_VERSION__}</span>
+          </p>
         </Card>
 
         {/* ══ Você ══ */}

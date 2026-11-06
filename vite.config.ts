@@ -3,8 +3,33 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
+import { execSync } from 'node:child_process';
+
+/**
+ * Versão que aparece em Configurações: o commit e o dia da montagem. Serve
+ * para conferir, num aparelho, se ele já está com a versão mais nova — o app
+ * de computador só muda reinstalando, e o instalado pelo navegador só troca
+ * quando a pessoa aceita o aviso de atualização.
+ */
+function versaoDaMontagem() {
+  let commit = (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7);
+  if (!commit) {
+    try {
+      commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim();
+    } catch {
+      commit = 'local';
+    }
+  }
+  const dia = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return `${commit} · ${dia}`;
+}
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(versaoDaMontagem()),
+  },
   plugins: [
     react(),
 

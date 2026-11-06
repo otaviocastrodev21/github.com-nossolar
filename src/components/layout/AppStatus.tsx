@@ -81,6 +81,19 @@ function WebUpdatePrompt() {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
+    // Sem isto, a versão nova só era notada ao abrir o app do zero: quem o
+    // deixa aberto (ou instalado no celular) ficava dias na versão anterior.
+    // Confere a cada 20 minutos e sempre que a pessoa volta para o app.
+    onRegisteredSW(_url, registro) {
+      if (!registro) return;
+      const conferir = () => {
+        if (navigator.onLine) void registro.update().catch(() => undefined);
+      };
+      window.setInterval(conferir, 20 * 60 * 1000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') conferir();
+      });
+    },
     onRegisterError(error) {
       console.warn('[Nosso Lar] Service worker não registrado:', error);
     },
