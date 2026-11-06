@@ -8,7 +8,7 @@
  * comportam como a aplicação espera.
  *
  * O que ele prova, em ordem:
- *   1. Criar um espaço cadastra as 208 linhas do enxoval
+ *   1. Criar um espaço cadastra as 174 linhas do enxoval
  *   2. Compra parcial atualiza quantidade comprada e pendente
  *   3. Compras sucessivas consolidam total e preço médio (o caso dos 6 pratos)
  *   4. Compra parcelada separa o que foi pago do que está comprometido
@@ -251,7 +251,7 @@ async function executar() {
 
   /* ── 1 · Criar espaço cadastra a lista inicial ───────────────────────── */
 
-  titulo('1 · Criar o espaço cadastra as 208 linhas do enxoval');
+  titulo('1 · Criar o espaço cadastra as 174 linhas do enxoval');
 
   const espacoAna = await rpc(ana, 'create_space', { p_name: `TESTE ${marca} casal A` });
   const espacoIntruso = await rpc(intruso, 'create_space', { p_name: `TESTE ${marca} casal B` });
@@ -267,7 +267,7 @@ async function executar() {
     `/rest/v1/items?space_id=eq.${espacoAna}&select=id,name,is_task,status,unit_price_estimate,qty_bought`,
   );
 
-  conferir(todosItens.length === 208, `208 itens cadastrados (achei ${todosItens.length})`);
+  conferir(todosItens.length === 174, `174 itens cadastrados (achei ${todosItens.length})`);
   conferir(
     todosItens.filter((i) => i.is_task).length === 6,
     '6 tarefas de verificação, separadas dos produtos',
@@ -282,7 +282,7 @@ async function executar() {
   );
 
   const categorias = await comoUsuario(ana, `/rest/v1/categories?space_id=eq.${espacoAna}&select=code`);
-  conferir(categorias.length === 14, `14 categorias (achei ${categorias.length})`);
+  conferir(categorias.length === 11, `11 categorias (achei ${categorias.length})`);
   void contagem;
 
   /* ── 2 e 3 · O caso dos 6 pratos ──────────────────────────────────────── */
@@ -501,7 +501,7 @@ async function executar() {
   conferir(reusoBarrado, 'O mesmo código NÃO serve uma segunda vez');
 
   const itensDoBruno = await comoUsuario(bruno, `/rest/v1/items?space_id=eq.${espacoAna}&select=id`);
-  conferir(itensDoBruno.length === 208, `Bruno enxerga os mesmos 208 itens (${itensDoBruno.length})`);
+  conferir(itensDoBruno.length === 174, `Bruno enxerga os mesmos 174 itens (${itensDoBruno.length})`);
 
   const comprasDoBruno = await comoUsuario(
     bruno,
@@ -537,7 +537,7 @@ async function executar() {
     aparelhoNovo,
     `/rest/v1/items?space_id=eq.${espacoAna}&select=id`,
   );
-  conferir(itensDeVolta.length === 208, 'E enxerga tudo de novo');
+  conferir(itensDeVolta.length === 174, 'E enxerga tudo de novo');
 
   // Gerar outro invalida o anterior — serve para "trocar a fechadura".
   const novaRecuperacao = await rpc(ana, 'create_access_code', {

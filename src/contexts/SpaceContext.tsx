@@ -11,6 +11,7 @@ import {
 import { friendlyError, supabase } from '@/lib/supabase';
 import { useSession } from './SessionContext';
 import { computeOverview, type Overview } from '@/lib/calc';
+import { planRetirement } from '@/lib/retiredItems';
 import { currentMonthKey, monthKeyToISO } from '@/lib/format';
 import type {
   ActivityEntry,
@@ -33,6 +34,44 @@ import type {
 } from '@/types/database';
 
 const ACTIVE_SPACE_KEY = 'nosso-lar.space';
+
+/**
+ * Tira do espaço as compras de mercado que saíram da lista inicial (ver
+ * retiredItems.ts). Roda ao carregar, uma vez por sessão; sem nada a tirar,
+ * não faz nenhuma chamada. Falhar aqui nunca impede a lista de abrir.
+ * Devolve true quando removeu algo, para a tela recarregar.
+ */
+async function retireMarketItems(spaceId: string, data: SpaceData): Promise<boolean> {
+  const plano = planRetirement(data);
+  if (plano.itemIds.length === 0 && plano.categoryIds.length === 0) return false;
+  try {
+    if (plano.itemIds.length > 0) {
+      const { error } = await supabase
+        .from('items')
+        .delete()
+        .eq('space_id', spaceId)
+        .in('id', plano.itemIds);
+      if (error) throw error;
+    }
+    if (plano.categoryIds.length > 0) {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('space_id', spaceId)
+        .in('id', plano.categoryIds);
+      // Uma categoria presa a uma compra antiga fica; não é motivo de alarme.
+      if (error) console.warn('[Nosso Lar] Categoria de mercado mantida:', error.message);
+    }
+    console.info(
+      `[Nosso Lar] Compras de mercado retiradas da lista: ${plano.itemIds.length} itens` +
+        (plano.kept > 0 ? `, ${plano.kept} mantidos por já terem compra ou cotação` : ''),
+    );
+    return true;
+  } catch (caught) {
+    console.warn('[Nosso Lar] Não foi possível retirar as compras de mercado:', caught);
+    return false;
+  }
+}
 
 /** localStorage pode falhar (janela privada, site data bloqueado). */
 function readStored(key: string): string | null {
@@ -161,6 +200,8 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
   const loadedSpaceRef = useRef<string | null>(null);
   const firstSpaceRef = useRef<Promise<string> | null>(null);
   const refreshTimer = useRef<number | null>(null);
+  /** espaços já conferidos nesta sessão quanto às compras de mercado */
+  const retiredRef = useRef(new Set<string>());
 
   const space = useMemo(
     () => spaces.find((candidate) => candidate.id === activeSpaceId) ?? null,
@@ -292,7 +333,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     firstSpaceRef.current ??= (async () => {
       // `ensure_space` devolve o espaço que já existe em vez de criar outro, e
       // serializa no banco — duas abas abertas no primeiro uso não produzem
-      // duas listas de 208 linhas.
+      // duas listas inteiras.
       const { data: created, error: rpcError } = await supabase.rpc('ensure_space');
       if (rpcError) throw new Error(friendlyError(rpcError));
       return created as string;
@@ -333,7 +374,11 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
         await loadSpaces();
       }
 
-      const next = await loadSpaceData(targetId);
+      let next = await loadSpaceData(targetId);
+      if (!retiredRef.current.has(targetId)) {
+        retiredRef.current.add(targetId);
+        if (await retireMarketItems(targetId, next)) next = await loadSpaceData(targetId);
+      }
       setData(next);
       loadedSpaceRef.current = targetId;
       setError(null);
@@ -536,7 +581,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
   /**
    * Como o espaço do primeiro uso nasce sozinho, quem entra com um código
    * normalmente deixa atrás de si um espaço recém-criado em que ninguém
-   * digitou nada. Guardá-lo só geraria confusão — duas listas de 208 linhas
+   * digitou nada. Guardá-lo só geraria confusão — duas listas inteiras
    * e nenhuma pista de qual é a de verdade. Então ele é descartado, mas
    * apenas se for comprovadamente intocado e só seu.
    */

@@ -563,8 +563,8 @@ export function Settings() {
           />
           <div className="px-5 py-5 sm:px-6">
             <p className="mb-4 text-[0.875rem] leading-relaxed text-ink-secondary">
-              O catálogo de referência tem 14 categorias e 208 linhas (202 produtos e 6 tarefas de
-              verificação). Esta ação recadastra apenas as linhas que não existem mais no checklist
+              O catálogo de referência tem 11 categorias e 174 linhas (168 produtos e 6 tarefas de
+              verificação). Compras de mercado ficam de fora: são para depois da casa montada. Esta ação recadastra apenas as linhas que não existem mais no checklist
               de vocês — nada é duplicado, nenhum preço é alterado e nenhuma compra é tocada.
             </p>
             <Button

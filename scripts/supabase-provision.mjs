@@ -356,6 +356,7 @@ const MIGRACOES = [
   ['0005_ensure_space.sql', 'o espaço do primeiro uso, criado sozinho e só uma vez'],
   ['0006_account_profile_sync.sql', 'e-mail e nome do perfil acompanham a conta'],
   ['0007_item_quotes.sql', 'comparativo de preços: cotações por item'],
+  ['0008_remove_market_items.sql', 'compras de mercado saem da lista inicial'],
 ];
 
 async function migrar(ref) {
@@ -531,8 +532,8 @@ async function verificar(ref) {
     ref,
     'select count(*)::int as tarefas from public.catalog_items where is_task',
   );
-  checar(categorias === 14, `${categorias} categorias no catálogo`, `Esperava 14 categorias, achei ${categorias}`);
-  checar(itens === 208, `${itens} linhas do enxoval (${itens - tarefas} produtos + ${tarefas} tarefas)`, `Esperava 208 linhas, achei ${itens}`);
+  checar(categorias === 11, `${categorias} categorias no catálogo`, `Esperava 11 categorias, achei ${categorias}`);
+  checar(itens === 174, `${itens} linhas do enxoval (${itens - tarefas} produtos + ${tarefas} tarefas)`, `Esperava 174 linhas, achei ${itens}`);
 
   // ── Nenhum preço inventado, nenhuma compra fictícia
   const [{ comPreco }] = await sql(
