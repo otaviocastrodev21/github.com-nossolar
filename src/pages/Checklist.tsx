@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   ChevronDown,
   Copy,
@@ -27,8 +28,9 @@ import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useToast } from '@/contexts/ToastContext';
 import { filterItems, itemProgress, type ItemSort } from '@/lib/calc';
-import { integer, money, percentPoints, quantity, unitFor } from '@/lib/format';
+import { integer, money, percentPoints, plural, quantity, unitFor } from '@/lib/format';
 import { PRIORITY_CHIP, STATUS_CHIP, STATUS_FILL } from '@/lib/viz';
+import { countsInProgress, isListKey, LISTS, LIST_BY_KEY, listOfCategory, type ListKey } from '@/lib/lists';
 import { PRIORITY_LABEL, STATUS_LABEL, STATUS_SHORT } from '@/types/database';
 import type { Item, ItemStatus, Priority } from '@/types/database';
 
@@ -36,6 +38,23 @@ export function Checklist() {
   const { items, categories, purchases, overview, updateItem, deleteItem, duplicateItem } =
     useSpace();
   const toast = useToast();
+
+  // ── Lista: enxoval, primeira compra ou materiais de construção (?lista=)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pedida = searchParams.get('lista');
+  const lista: ListKey = isListKey(pedida) ? pedida : 'itens';
+  const trocarLista = (proxima: ListKey) =>
+    setSearchParams(proxima === 'itens' ? {} : { lista: proxima }, { replace: true });
+  const categoriasDaLista = useMemo(
+    () => categories.filter((category) => listOfCategory(category) === lista),
+    [categories, lista],
+  );
+  const itensDaLista = useMemo(() => {
+    const ids = new Set(categoriasDaLista.map((category) => category.id));
+    return items.filter((item) => ids.has(item.category_id));
+  }, [items, categoriasDaLista]);
+  const andamento = overview.byList[lista];
+  const tarefasDaLista = itensDaLista.filter((item) => item.is_task).length;
 
   // ── Filtros
   const [search, setSearch] = useState('');
@@ -59,14 +78,25 @@ export function Checklist() {
   const [confirmDelete, setConfirmDelete] = useState<Item | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // A categoria escolhida no filtro é de outra lista: volta para "todas".
+  useEffect(() => {
+    if (categoryId !== 'todas' && !categoriasDaLista.some((category) => category.id === categoryId)) {
+      setCategoryId('todas');
+    }
+  }, [categoriasDaLista, categoryId]);
+  // Só o enxoval tem tarefas de verificação.
+  useEffect(() => {
+    if (tarefasDaLista === 0 && kind === 'tarefas') setKind('produtos');
+  }, [tarefasDaLista, kind]);
+
   const filtered = useMemo(
     () =>
       filterItems(
-        items,
+        itensDaLista,
         { search, categoryId, priority, status, hideDone, onlyPending, kind, sort },
-        categories,
+        categoriasDaLista,
       ),
-    [items, search, categoryId, priority, status, hideDone, onlyPending, kind, sort, categories],
+    [itensDaLista, search, categoryId, priority, status, hideDone, onlyPending, kind, sort, categoriasDaLista],
   );
 
   // A visão em lista agrupa por categoria; a de cards é um fluxo contínuo.
@@ -77,10 +107,10 @@ export function Checklist() {
       if (list) list.push(item);
       else map.set(item.category_id, [item]);
     }
-    return categories
+    return categoriasDaLista
       .filter((category) => map.has(category.id))
       .map((category) => ({ category, items: map.get(category.id) ?? [] }));
-  }, [filtered, categories]);
+  }, [filtered, categoriasDaLista]);
 
   const activeFilters =
     (search ? 1 : 0) +
@@ -143,13 +173,20 @@ export function Checklist() {
     <>
       <PageHeader
         icon={<ListChecks className="h-5 w-5" aria-hidden />}
-        title="Checklist do enxoval"
+        title={LIST_BY_KEY[lista].label}
         description={
           <>
-            {integer(overview.itemsTotal)} produtos e {integer(overview.tasksTotal)} tarefas de
-            verificação
-            {overview.itemsExcluded > 0
-              ? ` (${integer(overview.itemsExcluded)} marcados como “não será comprado” ficam fora da conta)`
+            {integer(andamento.itemsDone)} de {integer(andamento.itemsTotal)} itens concluídos ·{' '}
+            {percentPoints(andamento.completion * 100)}
+            {andamento.itemsOptional + andamento.itemsExcluded > 0
+              ? `. Fora da conta: ${[
+                  andamento.itemsOptional > 0 ? plural(andamento.itemsOptional, 'opcional', 'opcionais') : '',
+                  andamento.itemsExcluded > 0
+                    ? `${integer(andamento.itemsExcluded)} “não será comprado”`
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' e ')}`
               : ''}
             . As quantidades e prioridades iniciais são sugestões — editem à vontade.
           </>
@@ -179,6 +216,42 @@ export function Checklist() {
         }
       />
 
+      {/* ═══ As três listas, cada uma com a sua porcentagem ═══ */}
+      <div role="tablist" aria-label="Listas" className="mb-4 grid grid-cols-1 gap-2 min-[480px]:grid-cols-3">
+        {LISTS.map((info) => {
+          const ativa = info.key === lista;
+          const prog = overview.byList[info.key];
+          return (
+            <button
+              key={info.key}
+              type="button"
+              role="tab"
+              aria-selected={ativa}
+              onClick={() => trocarLista(info.key)}
+              className={clsx(
+                'group flex flex-col gap-1.5 rounded-2xl border px-4 py-3 text-left transition-all duration-300',
+                ativa
+                  ? 'border-olive-300 bg-gradient-to-br from-olive-100 via-cream-50 to-wood-100/60 shadow-card'
+                  : 'border-cream-400/80 bg-cream-100/70 hover:-translate-y-px hover:border-greige-300 hover:bg-cream-50',
+              )}
+            >
+              <span className="flex items-baseline justify-between gap-2">
+                <span className={clsx('text-[0.875rem] font-semibold', ativa ? 'text-olive-700' : 'text-ink')}>
+                  {info.label}
+                </span>
+                <span className="tnum text-[0.875rem] font-semibold text-ink">
+                  {percentPoints(prog.completion * 100)}
+                </span>
+              </span>
+              <Meter ratio={prog.completion} size="xs" label={`${info.label}: ${percentPoints(prog.completion * 100)}`} />
+              <span className="tnum text-[0.75rem] text-ink-muted">
+                {integer(prog.itemsDone)} de {integer(prog.itemsTotal)} itens
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* ═══ Barra de filtros (uma linha, acima de tudo que ela filtra) ═══ */}
       <Card className="mb-5 p-4 sm:p-5">
         <div className="flex flex-col gap-3">
@@ -201,6 +274,7 @@ export function Checklist() {
               />
             </div>
 
+            {tarefasDaLista > 0 ? (
             <SegmentedControl
               label="Tipo de registro"
               value={kind}
@@ -210,6 +284,7 @@ export function Checklist() {
                 { value: 'tarefas', label: 'Tarefas' },
               ]}
             />
+            ) : null}
 
             <Button
               variant={filtersOpen || activeFilters > 0 ? 'secondary' : 'ghost'}
@@ -243,7 +318,7 @@ export function Checklist() {
                     onChange={(event) => setCategoryId(event.target.value)}
                   >
                     <option value="todas">Todas as categorias</option>
-                    {categories.map((category) => (
+                    {categoriasDaLista.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.code} · {category.name}
                       </option>
@@ -396,7 +471,7 @@ export function Checklist() {
       ) : (
         <div className="stagger flex flex-col gap-5">
           {grouped.map(({ category, items: groupItems }) => {
-            const groupOut = groupItems.filter((item) => item.excluded && !item.is_task).length;
+            const groupOut = groupItems.filter((item) => !item.is_task && !countsInProgress(item)).length;
             const groupPending = groupItems.reduce(
               (acc, item) => acc + (Number(item.qty_pending) || 0),
               0,

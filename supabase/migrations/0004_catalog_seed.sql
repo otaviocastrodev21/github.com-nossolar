@@ -4,8 +4,8 @@
 --  ARQUIVO GERADO — não edite à mão.
 --  Fonte: supabase/catalog.mjs   ·   Regerar: node scripts/gen-catalog-sql.mjs
 --
---  11 categorias · 174 linhas
---  (168 produtos +
+--  14 categorias · 208 linhas
+--  (202 produtos +
 --   6 tarefas de verificação)
 --
 --  Todos nascem com preço estimado R$ 0,00, quantidade comprada 0 e status
@@ -19,11 +19,14 @@ insert into public.catalog_categories (code, name, icon, sort_order) values
   ('D', 'Cozinha — pratos, copos e organização', 'utensils', 4),
   ('E', 'Eletrodomésticos', 'refrigerator', 5),
   ('F', 'Lavanderia e limpeza', 'washing-machine', 6),
-  ('H', 'Sala de estar', 'sofa', 7),
-  ('I', 'Sala de jantar e receber visitas', 'armchair', 8),
-  ('J', 'Organização geral', 'package', 9),
-  ('K', 'Ferramentas e manutenção', 'wrench', 10),
-  ('L', 'Segurança da casa', 'shield-check', 11)
+  ('G', 'Produtos de limpeza', 'spray-can', 7),
+  ('H', 'Sala de estar', 'sofa', 8),
+  ('I', 'Sala de jantar e receber visitas', 'armchair', 9),
+  ('J', 'Organização geral', 'package', 10),
+  ('K', 'Ferramentas e manutenção', 'wrench', 11),
+  ('L', 'Segurança da casa', 'shield-check', 12),
+  ('M', 'Higiene pessoal', 'bath', 13),
+  ('N', 'Primeira compra de supermercado', 'shopping-cart', 14)
 on conflict (code) do update
   set name = excluded.name,
       icon = excluded.icon,
@@ -157,6 +160,16 @@ insert into public.catalog_items
   ('F', 'Pregadores de roupa', 'Organização', 'unidade', 24, 'essencial', false, false, false, false, null, 20),
   ('F', 'Organizador para produtos de limpeza', 'Organização', 'unidade', 1, 'opcional', false, false, false, false, null, 21),
   ('F', 'Sacos de lixo variados', 'Consumíveis', 'lote', 1, 'essencial', false, false, false, false, null, 22),
+  ('G', 'Detergente', 'Louças', 'unidade', 2, 'essencial', false, false, false, false, null, 1),
+  ('G', 'Sabão para roupas', 'Roupas', 'embalagem', 1, 'essencial', false, false, false, false, null, 2),
+  ('G', 'Amaciante', 'Roupas', 'embalagem', 1, 'opcional', false, false, false, false, null, 3),
+  ('G', 'Desinfetante', 'Geral', 'unidade', 1, 'essencial', false, false, false, false, null, 4),
+  ('G', 'Limpador multiuso', 'Geral', 'unidade', 1, 'essencial', false, false, false, false, null, 5),
+  ('G', 'Limpador de banheiro', 'Banheiro', 'unidade', 1, 'essencial', false, false, false, false, null, 6),
+  ('G', 'Água sanitária', 'Geral', 'unidade', 1, 'opcional', false, false, false, false, null, 7),
+  ('G', 'Álcool para limpeza, quando apropriado', 'Geral', 'unidade', 1, 'opcional', false, false, false, false, null, 8),
+  ('G', 'Sabão em barra', 'Roupas', 'embalagem', 1, 'opcional', false, false, false, false, null, 9),
+  ('G', 'Papel-toalha', 'Consumíveis', 'pacote', 1, 'opcional', false, false, false, false, null, 10),
   ('H', 'Sofá de 2 ou 3 lugares', 'Mobiliário', 'unidade', 1, 'essencial', false, false, false, false, null, 1),
   ('H', 'Rack ou painel para TV', 'Mobiliário', 'unidade', 1, 'importante', false, false, false, false, null, 2),
   ('H', 'Televisão', 'Eletrônicos', 'unidade', 1, 'opcional', false, false, false, false, null, 3),
@@ -209,4 +222,28 @@ insert into public.catalog_items
   ('L', 'Conferir tomadas, aterramento e disjuntores', 'Verificações', 'tarefa', 1, 'essencial', false, true, false, false, null, 3),
   ('L', 'Verificar torneiras e possíveis vazamentos', 'Verificações', 'tarefa', 1, 'essencial', false, true, false, false, null, 4),
   ('L', 'Conferir funcionamento dos chuveiros', 'Verificações', 'tarefa', 1, 'essencial', false, true, false, false, null, 5),
-  ('L', 'Separar contatos de emergência e manutenção', 'Verificações', 'tarefa', 1, 'essencial', false, true, false, false, null, 6);
+  ('L', 'Separar contatos de emergência e manutenção', 'Verificações', 'tarefa', 1, 'essencial', false, true, false, false, null, 6),
+  ('M', 'Escovas de dentes', 'Bucal', 'unidade', 2, 'essencial', false, false, false, false, null, 1),
+  ('M', 'Sabonetes', 'Banho', 'unidade', 2, 'essencial', false, false, false, false, 'Ajuste a quantidade conforme o consumo do casal.', 2),
+  ('M', 'Shampoo e condicionador', 'Banho', 'lote', 1, 'essencial', false, false, false, false, null, 3),
+  ('M', 'Desodorantes', 'Cuidados diários', 'unidade', 2, 'essencial', false, false, false, false, null, 4),
+  ('M', 'Creme dental', 'Bucal', 'unidade', 1, 'essencial', false, false, false, false, null, 5),
+  ('M', 'Fio dental', 'Bucal', 'unidade', 1, 'essencial', false, false, false, false, null, 6),
+  ('M', 'Algodão e cotonetes', 'Cuidados diários', 'lote', 1, 'opcional', false, false, false, false, null, 7),
+  ('M', 'Produtos pessoais de uso habitual', 'Cuidados diários', 'lote', 1, 'essencial', false, false, false, false, null, 8),
+  ('M', 'Medicamentos de uso habitual, se houver', 'Saúde', 'lote', 1, 'opcional', true, false, false, true, 'Depende da estrutura da residência — confirme a necessidade antes de comprar.', 9),
+  ('N', 'Café', 'Mercearia', 'pacote', 1, 'opcional', false, false, true, false, 'Conforme a preferência do casal.', 1),
+  ('N', 'Açúcar ou adoçante', 'Mercearia', 'embalagem', 1, 'opcional', false, false, true, false, 'Conforme a preferência do casal.', 2),
+  ('N', 'Sal', 'Mercearia', 'pacote', 1, 'essencial', false, false, true, false, null, 3),
+  ('N', 'Óleo ou azeite', 'Mercearia', 'unidade', 1, 'essencial', false, false, true, false, null, 4),
+  ('N', 'Arroz', 'Mercearia', 'pacote', 1, 'essencial', false, false, true, false, null, 5),
+  ('N', 'Feijão', 'Mercearia', 'pacote', 1, 'essencial', false, false, true, false, null, 6),
+  ('N', 'Macarrão', 'Mercearia', 'pacote', 2, 'essencial', false, false, true, false, null, 7),
+  ('N', 'Farinha e ingredientes habituais', 'Mercearia', 'lote', 1, 'opcional', false, false, true, false, 'Conforme a preferência do casal.', 8),
+  ('N', 'Temperos básicos', 'Mercearia', 'lote', 1, 'essencial', false, false, true, false, null, 9),
+  ('N', 'Leite', 'Perecíveis', 'lote', 1, 'importante', false, false, true, false, 'Ajuste a quantidade conforme o consumo do casal.', 10),
+  ('N', 'Ovos', 'Perecíveis', 'embalagem', 1, 'importante', false, false, true, false, 'Ajuste a quantidade conforme o consumo do casal.', 11),
+  ('N', 'Pão', 'Perecíveis', 'lote', 1, 'importante', false, false, true, false, 'Ajuste a quantidade conforme o consumo do casal.', 12),
+  ('N', 'Manteiga ou margarina', 'Perecíveis', 'unidade', 1, 'opcional', false, false, true, false, 'Conforme a preferência do casal.', 13),
+  ('N', 'Água potável', 'Bebidas', 'lote', 1, 'essencial', false, false, true, false, null, 14),
+  ('N', 'Alimentos para as primeiras refeições', 'Perecíveis', 'lote', 1, 'essencial', false, false, true, false, null, 15);

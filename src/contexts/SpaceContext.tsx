@@ -11,7 +11,7 @@ import {
 import { friendlyError, supabase } from '@/lib/supabase';
 import { useSession } from './SessionContext';
 import { computeOverview, type Overview } from '@/lib/calc';
-import { planRetirement } from '@/lib/retiredItems';
+import { planFirstPurchaseRestore } from '@/lib/restoreFirstPurchase';
 import { currentMonthKey, monthKeyToISO } from '@/lib/format';
 import type {
   ActivityEntry,
@@ -36,39 +36,57 @@ import type {
 const ACTIVE_SPACE_KEY = 'nosso-lar.space';
 
 /**
- * Tira do espaço as compras de mercado que saíram da lista inicial (ver
- * retiredItems.ts). Roda ao carregar, uma vez por sessão; sem nada a tirar,
- * não faz nenhuma chamada. Falhar aqui nunca impede a lista de abrir.
- * Devolve true quando removeu algo, para a tela recarregar.
+ * Devolve ao espaço as categorias da primeira compra que faltam (ver
+ * restoreFirstPurchase.ts). Sem nada faltando, não faz nenhuma chamada.
+ * Falhar aqui nunca impede a lista de abrir. Devolve true quando criou algo.
  */
-async function retireMarketItems(spaceId: string, data: SpaceData): Promise<boolean> {
-  const plano = planRetirement(data);
-  if (plano.itemIds.length === 0 && plano.categoryIds.length === 0) return false;
+async function restoreFirstPurchase(
+  spaceId: string,
+  categories: Category[],
+  userId: string,
+): Promise<boolean> {
+  const plano = planFirstPurchaseRestore(categories);
+  if (plano.length === 0) return false;
   try {
-    if (plano.itemIds.length > 0) {
-      const { error } = await supabase
-        .from('items')
-        .delete()
-        .eq('space_id', spaceId)
-        .in('id', plano.itemIds);
-      if (error) throw error;
-    }
-    if (plano.categoryIds.length > 0) {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('space_id', spaceId)
-        .in('id', plano.categoryIds);
-      // Uma categoria presa a uma compra antiga fica; não é motivo de alarme.
-      if (error) console.warn('[Nosso Lar] Categoria de mercado mantida:', error.message);
-    }
-    console.info(
-      `[Nosso Lar] Compras de mercado retiradas da lista: ${plano.itemIds.length} itens` +
-        (plano.kept > 0 ? `, ${plano.kept} mantidos por já terem compra ou cotação` : ''),
+    // ON CONFLICT DO NOTHING: se outro aparelho criou a categoria no mesmo
+    // instante, ela não volta aqui — e os itens dela não são duplicados.
+    const { data: criadas, error } = await supabase
+      .from('categories')
+      .upsert(
+        plano.map(({ code, name, icon, sort_order }) => ({
+          space_id: spaceId,
+          code,
+          name,
+          icon,
+          sort_order,
+        })),
+        { onConflict: 'space_id,code', ignoreDuplicates: true },
+      )
+      .select('id, code');
+    if (error) throw error;
+    const idDoCodigo = new Map(
+      ((criadas ?? []) as { id: string; code: string }[]).map((c) => [c.code, c.id]),
     );
-    return true;
+
+    const itens = plano.flatMap((categoria) => {
+      const categoryId = idDoCodigo.get(categoria.code);
+      if (!categoryId) return [];
+      return categoria.items.map((item) => ({
+        ...item,
+        space_id: spaceId,
+        category_id: categoryId,
+        is_custom: false,
+        created_by: userId,
+      }));
+    });
+    if (itens.length > 0) {
+      const { error: itemError } = await supabase.from('items').insert(itens);
+      if (itemError) throw itemError;
+    }
+    console.info(`[Nosso Lar] Lista da primeira compra devolvida: ${itens.length} itens.`);
+    return idDoCodigo.size > 0;
   } catch (caught) {
-    console.warn('[Nosso Lar] Não foi possível retirar as compras de mercado:', caught);
+    console.warn('[Nosso Lar] Não foi possível devolver a lista da primeira compra:', caught);
     return false;
   }
 }
@@ -200,8 +218,8 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
   const loadedSpaceRef = useRef<string | null>(null);
   const firstSpaceRef = useRef<Promise<string> | null>(null);
   const refreshTimer = useRef<number | null>(null);
-  /** espaços já conferidos nesta sessão quanto às compras de mercado */
-  const retiredRef = useRef(new Set<string>());
+  /** espaços já conferidos nesta sessão quanto à lista da primeira compra */
+  const restoredRef = useRef(new Set<string>());
 
   const space = useMemo(
     () => spaces.find((candidate) => candidate.id === activeSpaceId) ?? null,
@@ -333,7 +351,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
     firstSpaceRef.current ??= (async () => {
       // `ensure_space` devolve o espaço que já existe em vez de criar outro, e
       // serializa no banco — duas abas abertas no primeiro uso não produzem
-      // duas listas inteiras.
+      // duas listas de 208 linhas.
       const { data: created, error: rpcError } = await supabase.rpc('ensure_space');
       if (rpcError) throw new Error(friendlyError(rpcError));
       return created as string;
@@ -375,9 +393,11 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
       }
 
       let next = await loadSpaceData(targetId);
-      if (!retiredRef.current.has(targetId)) {
-        retiredRef.current.add(targetId);
-        if (await retireMarketItems(targetId, next)) next = await loadSpaceData(targetId);
+      if (!restoredRef.current.has(targetId)) {
+        restoredRef.current.add(targetId);
+        if (await restoreFirstPurchase(targetId, next.categories, user.id)) {
+          next = await loadSpaceData(targetId);
+        }
       }
       setData(next);
       loadedSpaceRef.current = targetId;
@@ -581,7 +601,7 @@ export function SpaceProvider({ children }: { children: ReactNode }) {
   /**
    * Como o espaço do primeiro uso nasce sozinho, quem entra com um código
    * normalmente deixa atrás de si um espaço recém-criado em que ninguém
-   * digitou nada. Guardá-lo só geraria confusão — duas listas inteiras
+   * digitou nada. Guardá-lo só geraria confusão — duas listas de 208 linhas
    * e nenhuma pista de qual é a de verdade. Então ele é descartado, mas
    * apenas se for comprovadamente intocado e só seu.
    */

@@ -55,7 +55,10 @@ const CAT: Record<string, Category> = {
   },
 };
 
-const CATEGORIES = [CAT.cozinha, CAT.quarto, CAT.seguranca];
+CAT.mercado = { ...CAT.cozinha, id: 'cat-mercado', code: 'N', name: 'Primeira compra de supermercado', sort_order: 4 };
+CAT.ferramentas = { ...CAT.cozinha, id: 'cat-ferr', code: 'K', name: 'Ferramentas e manutenção', sort_order: 5 };
+
+const CATEGORIES = [CAT.cozinha, CAT.quarto, CAT.seguranca, CAT.mercado, CAT.ferramentas];
 
 function makeItem(overrides: Partial<Item> & { id: string; name: string }): Item {
   const base = {
@@ -981,5 +984,46 @@ describe('recorte por categoria', () => {
     expect(quarto?.contracted).toBe(2000);
     expect(quarto?.spent).toBe(500); // 1 de 4 parcelas
     expect(quarto?.committed).toBe(1500);
+  });
+});
+
+/* ═══════════════ Listas: enxoval, primeira compra, construção ═══════════════ */
+
+describe('três listas, cada uma com a sua conta', () => {
+  const panela = makeItem({ id: 'panela', name: 'Panela', qty_needed: 2, qty_bought: 1 });
+  const vaso = makeItem({ id: 'vaso', name: 'Vaso decorativo', priority: 'opcional' });
+  const arroz = makeItem({ id: 'arroz', name: 'Arroz', category_id: CAT.mercado.id, qty_bought: 1 });
+  const cafe = makeItem({ id: 'cafe', name: 'Café', category_id: CAT.mercado.id });
+  const trena = makeItem({ id: 'trena', name: 'Trena', category_id: CAT.ferramentas.id });
+
+  const overview = overviewOf({ items: [panela, vaso, arroz, cafe, trena] });
+
+  it('o enxoval (lista principal) não conta primeira compra nem construção', () => {
+    expect(overview.itemsTotal).toBe(1); // só a panela; o vaso é opcional
+    expect(overview.unitsPlanned).toBe(2);
+    expect(overview.completion).toBeCloseTo(0.5);
+    expect(overview.byList.itens.itemsTotal).toBe(1);
+  });
+
+  it('primeira compra e materiais de construção têm porcentagem própria', () => {
+    expect(overview.byList.pc.itemsTotal).toBe(2);
+    expect(overview.byList.pc.itemsDone).toBe(1);
+    expect(overview.byList.pc.completion).toBeCloseTo(0.5);
+    expect(overview.byList.construcao.itemsTotal).toBe(1);
+    expect(overview.byList.construcao.completion).toBe(0);
+  });
+
+  it('item opcional fica fora da contagem e da porcentagem, mas é informado', () => {
+    expect(overview.itemsOptional).toBe(1);
+    const soOpcional = overviewOf({ items: [makeItem({ id: 'o', name: 'Quadro', priority: 'opcional', qty_bought: 0 })] });
+    expect(soOpcional.itemsTotal).toBe(0);
+    expect(soOpcional.completion).toBe(0);
+  });
+
+  it('cada categoria sabe a que lista pertence', () => {
+    const lista = (id: string) => overview.byCategory.find((c) => c.categoryId === id)?.list;
+    expect(lista(CAT.cozinha.id)).toBe('itens');
+    expect(lista(CAT.mercado.id)).toBe('pc');
+    expect(lista(CAT.ferramentas.id)).toBe('construcao');
   });
 });

@@ -37,6 +37,8 @@ import { CategorySpendChart, MonthlySpendChart } from '@/components/dashboard/ch
 import { PurchaseForm } from '@/components/purchases/PurchaseForm';
 import { useSpace } from '@/contexts/SpaceContext';
 import { useSession } from '@/contexts/SessionContext';
+import { Link } from 'react-router-dom';
+import { LIST_BY_KEY } from '@/lib/lists';
 import { nextPriorityItems, recentPurchases } from '@/lib/calc';
 import { dateBR, integer, money, monthLongBR, percentPoints, plural, quantity, unitFor } from '@/lib/format';
 import { STATUS_FILL, PRIORITY_CHIP } from '@/lib/viz';
@@ -141,10 +143,30 @@ export function Dashboard() {
                   <span className="mt-1 block text-[0.75rem] font-medium text-ink-muted">concluído</span>
                 </div>
               </ProgressRing>
-              <p className="min-w-0 max-w-[16rem] text-[0.8125rem] leading-relaxed text-ink-muted">
-                {quantity(overview.unitsBought)} de {quantity(overview.unitsPlanned)} unidades
-                planejadas. Tarefas de verificação e itens “não será comprado” ficam de fora.
-              </p>
+              <div className="flex min-w-0 max-w-[17rem] flex-col gap-3">
+                <p className="text-[0.8125rem] leading-relaxed text-ink-muted">
+                  Enxoval: {quantity(overview.unitsBought)} de {quantity(overview.unitsPlanned)}{' '}
+                  unidades. Opcionais e “não será comprado” ficam de fora.
+                </p>
+                {/* as outras duas listas, cada uma com a sua porcentagem */}
+                {(['pc', 'construcao'] as const).map((chave) => {
+                  const prog = overview.byList[chave];
+                  const rotulo = LIST_BY_KEY[chave].short;
+                  return (
+                    <Link
+                      key={chave}
+                      to={`/checklist?lista=${chave}`}
+                      className="group block rounded-xl border border-cream-400/70 bg-cream-50/60 px-3 py-2 transition hover:border-olive-300"
+                    >
+                      <span className="flex items-baseline justify-between gap-2 text-[0.75rem]">
+                        <span className="font-medium text-ink-secondary group-hover:text-ink">{rotulo}</span>
+                        <span className="tnum font-semibold text-ink">{percentPoints(prog.completion * 100)}</span>
+                      </span>
+                      <Meter ratio={prog.completion} size="xs" className="mt-1.5" label={`${rotulo}: ${percentPoints(prog.completion * 100)}`} />
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex min-w-0 flex-col gap-5">
@@ -175,7 +197,7 @@ export function Dashboard() {
 
               <div>
                 <h3 className="mb-2.5 text-[0.8125rem] font-semibold text-ink-secondary">
-                  Situação dos {integer(overview.itemsTotal)} itens
+                  Situação dos {integer(overview.itemsTotal)} itens do enxoval
                 </h3>
                 <StackedBar
                   total={overview.itemsTotal}
@@ -186,10 +208,20 @@ export function Dashboard() {
                     color: STATUS_FILL[entry.status],
                   }))}
                 />
-                {overview.itemsExcluded > 0 ? (
+                {overview.itemsExcluded + overview.itemsOptional > 0 ? (
                   <p className="mt-2 text-[0.75rem] text-ink-muted">
-                    {plural(overview.itemsExcluded, 'item marcado', 'itens marcados')} como “não será
-                    comprado” {overview.itemsExcluded === 1 ? 'fica' : 'ficam'} fora da conta.
+                    Fora da conta:{' '}
+                    {[
+                      overview.itemsOptional > 0
+                        ? plural(overview.itemsOptional, 'item opcional', 'itens opcionais')
+                        : '',
+                      overview.itemsExcluded > 0
+                        ? `${plural(overview.itemsExcluded, 'item', 'itens')} “não será comprado”`
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' e ')}
+                    .
                   </p>
                 ) : null}
               </div>

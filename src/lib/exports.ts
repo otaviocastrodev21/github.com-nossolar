@@ -196,6 +196,8 @@ export function exportChecklistXLSX(context: ExportContext, overview: Overview):
       ['Unidades adquiridas', quantity(overview.unitsBought)],
       ['Unidades pendentes', quantity(overview.unitsPending)],
       ['Conclusão do enxoval', percentPoints(overview.completion * 100)],
+      ['Conclusão da primeira compra', percentPoints(overview.byList.pc.completion * 100)],
+      ['Conclusão dos materiais de construção', percentPoints(overview.byList.construcao.completion * 100)],
       ['Total estimado do enxoval', money(overview.estimatedTotal)],
       ['Valor estimado restante', money(overview.estimatedRemaining)],
       ['Total efetivamente gasto', money(overview.totalSpent)],
@@ -571,6 +573,8 @@ export function exportFinanceReportPDF(options: {
       ],
       ['Itens acima do preço estimado', integer(overview.itemsOverEstimate)],
       ['Conclusão do enxoval', percentPoints(overview.completion * 100)],
+      ['Conclusão da primeira compra', percentPoints(overview.byList.pc.completion * 100)],
+      ['Conclusão dos materiais de construção', percentPoints(overview.byList.construcao.completion * 100)],
       [
         `Gasto em ${monthLongBR(overview.monthKey)}`,
         `${money(overview.monthSpent)} (${integer(overview.monthPurchaseCount)} compras)`,

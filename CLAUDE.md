@@ -9,7 +9,7 @@
 ## 1. O que é
 
 Aplicativo do casal para controlar o **enxoval da casa nova**: checklist de
-itens, compras (com parcelas), orçamento por categoria, pendências,
+itens em **três listas** (enxoval, primeira compra, materiais de construção), compras (com parcelas), orçamento por categoria, pendências,
 comparativo de preços entre lojas e relatórios (Excel/PDF/CSV). Sincroniza em
 tempo real entre os aparelhos dos dois.
 
@@ -33,7 +33,7 @@ Realtime) · Recharts · SheetJS/jsPDF · Electron 33 · vite-plugin-pwa · Vite
 
 ```
 npm run dev                # Vite em http://localhost:5173
-npm run verify             # typecheck + testes (109) + build — rode antes de commitar
+npm run verify             # typecheck + testes (110) + build — rode antes de commitar
 npm run desktop:verify     # monta e abre o Electron com --smoke; precisa imprimir "ok": true
 npm run desktop:dist:win   # gera os 4 instaladores em release/
 npm run gen:catalog        # regera 0004_catalog_seed.sql e schema.sql a partir de supabase/catalog.mjs
@@ -51,7 +51,7 @@ src/
   App.tsx                 porteira: sem Supabase → SetupScreen; sem conta → AuthScreen; senão o app
   contexts/
     SessionContext.tsx    conta (e-mail+senha); converte sessão anônima antiga em conta
-    SpaceContext.tsx      carrega o espaço, Realtime, todas as mutações; limpeza de itens de mercado
+    SpaceContext.tsx      carrega o espaço, Realtime, todas as mutações; devolve a primeira compra
     ToastContext.tsx
   pages/                  Dashboard, Checklist, Purchases, Pending, Finance, Reports, Settings, AuthScreen
   components/
@@ -63,12 +63,14 @@ src/
   lib/
     calc.ts               computeOverview: todos os números do painel (fonte única das contagens)
     quotes.ts             comparação de cotações, nome da loja a partir do link
-    retiredItems.ts       lista dos 34 itens de mercado retirados + regra de limpeza
+    lists.ts              as 3 listas (pela letra da categoria) e quem conta na porcentagem
+    restoreFirstPurchase.ts  devolve a lista da primeira compra a espaços que a perderam
     theme.ts motion.ts celebrate.ts   tema claro/escuro, número que sobe, luz do mouse, confete
     viz.ts                cores dos gráficos (variáveis CSS, valem nos dois temas)
 supabase/
-  catalog.mjs             FONTE da lista inicial do enxoval (11 categorias, 174 linhas)
-  migrations/0001…0008    esquema, funções, RLS, catálogo, ensure_space, perfil, cotações, mercado
+  catalog.mjs             FONTE da lista inicial (14 categorias, 208 linhas); tipos em catalog.d.mts,
+                          importado também pelo app (restoreFirstPurchase.ts)
+  migrations/0001…0007    esquema, funções, RLS, catálogo, ensure_space, perfil, cotações
 electron/main.cjs         janela, CSP restrita, protocolo próprio, modo --smoke
 scripts/                  provisionamento do Supabase, teste de integração, ícones, desktop
 ```
@@ -94,8 +96,9 @@ scripts/                  provisionamento do Supabase, teste de integração, í
   por código de pareamento (24 h, uso único) ou de recuperação. Tudo é protegido
   por RLS com `is_space_member(space_id)`. `ensure_space()` cria o espaço no
   primeiro login, com lock para não duplicar.
-- Migrações aplicadas no banco: **0001–0007**. **0008 NÃO está aplicada** (ver
-  pendências).
+- Migrações aplicadas no banco: **0001–0007** (todas as que existem). Uma 0008
+  chegou a existir (tirar mercado do catálogo), nunca foi aplicada e foi
+  removida quando a lista de mercado voltou.
 
 ## 5. Histórico (commits na ordem)
 
@@ -122,28 +125,32 @@ scripts/                  provisionamento do Supabase, teste de integração, í
    genéricos). Também: ItemDetail passou a ler o item atualizado do contexto.
 10. `ab6988a` A pedido: **tirar compras de mercado** (primeira compra de
     supermercado, produtos de limpeza, higiene pessoal: 3 categorias, 34 itens).
-    Catálogo agora 11 categorias / 174 linhas. Espaços existentes são limpos pelo
-    próprio app ao abrir (`retiredItems.ts`), sem tocar em itens criados pelo
-    casal, com compra, quantidade comprada ou cotação.
+    Catálogo foi a 11 categorias / 174 linhas e o app limpava os espaços ao abrir.
+    **Desfeito no item 13** — não existe mais (`retiredItems.ts` saiu).
 11. `4016db4` A pedido: **"não será comprado" fora de todas as contagens** (total,
     concluídos, porcentagem, barra de situação, por categoria). A porcentagem já
     era por unidades ativas; as contagens de itens é que incluíam.
 12. `9ae0c11` **Versão visível** em Configurações → Aparência ("9ae0c11 ·
     06/11/2026") e PWA procurando atualização a cada 20 min e ao voltar à aba.
     Motivo: o dono viu "13 de 168 itens" numa versão antiga ainda aberta.
+13. (09/11) A pedido: **três listas**, cada uma com contagem e porcentagem próprias,
+    nas abas do Checklist (`?lista=itens|pc|construcao`), na barra lateral e no Painel:
+    - **Checklist itens** (enxoval): todas as categorias, exceto as abaixo.
+    - **Checklist P.C** (primeira compra): G Produtos de limpeza, M Higiene pessoal,
+      N Primeira compra de supermercado. **Desfaz o item 10**: a lista de mercado
+      voltou ao catálogo e o app a devolve aos espaços que a perderam (só recria a
+      categoria ausente por inteiro, com os itens originais).
+    - **Materiais de construção**: K Ferramentas e manutenção (trena, nível, primeiros
+      socorros, fixação, elétrica).
+    - **Itens opcionais saem da contagem e da porcentagem** em todas as listas, como
+      "não será comprado" e tarefas. Regra única em `countsInProgress` (lists.ts).
+    - Dinheiro (gasto, orçamento, estimado) continua somando as três listas.
 
 ## 6. Pendências e pontos em aberto
 
-- **Aplicar a migração 0008** (`supabase/migrations/0008_remove_market_items.sql`,
-  uma linha). Sem ela o catálogo do banco ainda tem as 3 categorias de mercado:
-  espaço novo nasce com elas (o app as remove ao abrir) e o botão "recadastrar
-  itens" em Configurações as traz de volta. O dono pode colar no SQL Editor, ou
-  dar um token novo.
-- A limpeza dos itens de mercado e a correção de "não será comprado" **não foram
-  testadas contra o banco real** (sem token não dava para apagar a conta de
-  teste depois). A regra tem testes unitários. Confirmar com o dono que, na
-  versão 9ae0c11, os itens de mercado sumiram e a contagem cai ao marcar
-  "não será comprado".
+- **Não testado contra o banco real** (sem token): a devolução da lista da
+  primeira compra e as três porcentagens. A regra tem testes unitários. Confirmar
+  com o dono que as abas e as porcentagens aparecem e que os 34 itens voltaram.
 - O app de computador do dono precisa ser **reinstalado** a cada versão.
 - Ideias não feitas (só se o dono pedir): "esqueci a senha" com SMTP próprio;
   auto-atualização do Electron; publicar nas lojas com Capacitor.
@@ -163,6 +170,8 @@ scripts/                  provisionamento do Supabase, teste de integração, í
   `npm run desktop:dist:win` e `npm run desktop:verify` ("ok": true).
 - Commits terminam com a linha de coautoria indicada pela sessão.
 - Não reintroduzir cores fixas, blur em cartões, animação contínua de fundo.
+- A lista de uma categoria vem da **letra** (`lists.ts`); categoria nova do casal
+  cai no enxoval. Para mover uma categoria de lista, mude o mapa ali.
 - Mudança de catálogo: edite `supabase/catalog.mjs`, rode `npm run gen:catalog`,
   crie migração nova para o banco e atualize as contagens (Settings, SetupScreen,
   scripts de verificação, README).

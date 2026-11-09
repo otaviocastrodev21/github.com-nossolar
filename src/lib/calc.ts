@@ -32,6 +32,7 @@ import type {
   Purchase,
 } from '@/types/database';
 import { PRIORITY_ORDER } from '@/types/database';
+import { countsInProgress, listOfCategory, type ListKey } from './lists';
 
 /** Tarefas de verificação não entram em orçamento nem em quantidades. */
 export const isProduct = (item: Item): boolean => !item.is_task;
@@ -215,11 +216,55 @@ export interface CategoryBreakdown {
   usage: number | null;
   /** 'ok' | 'atencao' (>= 80%) | 'estourado' (>= 100%) */
   level: 'ok' | 'atencao' | 'estourado' | null;
+  list: ListKey;
   itemsTotal: number;
   itemsDone: number;
   itemsPartial: number;
   itemsPending: number;
   completion: number;
+}
+
+/**
+ * Andamento de uma lista (ou de um conjunto qualquer de itens). Conta só o
+ * que `countsInProgress` aceita: produto, no plano e não opcional.
+ */
+export interface ListProgress {
+  /** itens que contam */
+  itemsTotal: number;
+  itemsDone: number;
+  itemsPartial: number;
+  itemsPending: number;
+  /** fora da conta por "não será comprado" */
+  itemsExcluded: number;
+  /** fora da conta por serem opcionais (e ainda no plano) */
+  itemsOptional: number;
+  unitsPlanned: number;
+  unitsBought: number;
+  unitsPending: number;
+  /** 0 a 1, por unidades */
+  completion: number;
+}
+
+export function listProgress(items: readonly Item[]): ListProgress {
+  const products = items.filter(isProduct);
+  const counted = products.filter(countsInProgress);
+  const unitsPlanned = counted.reduce((acc, i) => acc + (Number(i.qty_needed) || 0), 0);
+  const unitsBought = counted.reduce(
+    (acc, i) => acc + Math.min(Number(i.qty_bought) || 0, Number(i.qty_needed) || 0),
+    0,
+  );
+  return {
+    itemsTotal: counted.length,
+    itemsDone: counted.filter((i) => i.status === 'comprado').length,
+    itemsPartial: counted.filter((i) => i.status === 'parcial').length,
+    itemsPending: counted.filter((i) => i.status === 'pendente').length,
+    itemsExcluded: products.filter((i) => i.excluded).length,
+    itemsOptional: products.filter((i) => !i.excluded && i.priority === 'opcional').length,
+    unitsPlanned,
+    unitsBought,
+    unitsPending: counted.reduce((acc, i) => acc + (Number(i.qty_pending) || 0), 0),
+    completion: unitsPlanned > 0 ? Math.min(unitsBought / unitsPlanned, 1) : 0,
+  };
 }
 
 export interface MonthBreakdown {
@@ -233,26 +278,31 @@ export interface MonthBreakdown {
 }
 
 export interface Overview {
-  // ── Itens
+  // ── Itens — da lista principal (Checklist itens, o enxoval)
   /**
-   * Produtos que contam no enxoval. Os marcados como "não será comprado"
-   * ficam fora — do total, dos concluídos e da porcentagem — e aparecem só
-   * em `itemsExcluded`.
+   * Produtos do enxoval que contam. Ficam fora — do total, dos concluídos e
+   * da porcentagem — os "não será comprado" (`itemsExcluded`) e os
+   * opcionais (`itemsOptional`). Primeira compra e materiais de construção
+   * têm a própria conta em `byList`.
    */
   itemsTotal: number;
   itemsDone: number;
   itemsPartial: number;
   itemsPending: number;
   itemsExcluded: number;
+  itemsOptional: number;
   tasksTotal: number;
   tasksDone: number;
 
-  // ── Quantidades
+  // ── Quantidades — da lista principal
   unitsPlanned: number;
   unitsBought: number;
   unitsPending: number;
   /** 0 a 1 */
   completion: number;
+
+  /** andamento de cada lista: enxoval, primeira compra, construção */
+  byList: Record<ListKey, ListProgress>;
 
   // ── Dinheiro
   totalSpent: number;
@@ -298,25 +348,18 @@ export function computeOverview(input: OverviewInput): Overview {
   } = input;
 
   const budgetSet = indexBudgets(budgets);
-  const products = items.filter(isProduct);
   const active = items.filter(isActive);
   const tasks = items.filter((i) => i.is_task);
 
-  // ── Contagens de itens
-  // "Não será comprado" sai da conta: não é pendência nem conclusão.
-  const itemsDone = products.filter((i) => i.status === 'comprado').length;
-  const itemsPartial = products.filter((i) => i.status === 'parcial').length;
-  const itemsPending = products.filter((i) => i.status === 'pendente').length;
-  const itemsExcluded = products.filter((i) => i.status === 'nao_sera_comprado').length;
-
-  // ── Quantidades (só itens ativos)
-  const unitsPlanned = active.reduce((acc, i) => acc + (Number(i.qty_needed) || 0), 0);
-  const unitsBought = active.reduce(
-    (acc, i) => acc + Math.min(Number(i.qty_bought) || 0, Number(i.qty_needed) || 0),
-    0,
-  );
-  const unitsPending = active.reduce((acc, i) => acc + (Number(i.qty_pending) || 0), 0);
-  const completion = unitsPlanned > 0 ? Math.min(unitsBought / unitsPlanned, 1) : 0;
+  // ── Contagens, por lista. A lista vem da categoria do item.
+  const listaDaCategoria = new Map(categories.map((c) => [c.id, listOfCategory(c)]));
+  const listaDoItem = (item: Item): ListKey => listaDaCategoria.get(item.category_id) ?? 'itens';
+  const byList: Record<ListKey, ListProgress> = {
+    itens: listProgress(items.filter((i) => listaDoItem(i) === 'itens')),
+    pc: listProgress(items.filter((i) => listaDoItem(i) === 'pc')),
+    construcao: listProgress(items.filter((i) => listaDoItem(i) === 'construcao')),
+  };
+  const principal = byList.itens;
 
   // ── Dinheiro
   const purchasesSpent = sum(payments, (p) => p.amount);
@@ -395,13 +438,8 @@ export function computeOverview(input: OverviewInput): Overview {
 
   const byCategory: CategoryBreakdown[] = categories.map((category) => {
     const own = itemsByCategory.get(category.id) ?? [];
-    const ownProducts = own.filter(isProduct);
     const ownActive = own.filter(isActive);
-    const planned = ownActive.reduce((acc, i) => acc + (Number(i.qty_needed) || 0), 0);
-    const bought = ownActive.reduce(
-      (acc, i) => acc + Math.min(Number(i.qty_bought) || 0, Number(i.qty_needed) || 0),
-      0,
-    );
+    const andamento = listProgress(own);
     const spent = spentByCategory.get(category.id) ?? 0;
     const budget = budgetSet.byCategory.get(category.id) ?? null;
     const usage = budget && budget > 0 ? spent / budget : null;
@@ -418,11 +456,12 @@ export function computeOverview(input: OverviewInput): Overview {
       budget,
       usage,
       level: usage === null ? null : usage >= 1 ? 'estourado' : usage >= 0.8 ? 'atencao' : 'ok',
-      itemsTotal: ownActive.length,
-      itemsDone: ownProducts.filter((i) => i.status === 'comprado').length,
-      itemsPartial: ownProducts.filter((i) => i.status === 'parcial').length,
-      itemsPending: ownProducts.filter((i) => i.status === 'pendente').length,
-      completion: planned > 0 ? Math.min(bought / planned, 1) : 0,
+      list: listOfCategory(category),
+      itemsTotal: andamento.itemsTotal,
+      itemsDone: andamento.itemsDone,
+      itemsPartial: andamento.itemsPartial,
+      itemsPending: andamento.itemsPending,
+      completion: andamento.completion,
     };
   });
 
@@ -464,18 +503,20 @@ export function computeOverview(input: OverviewInput): Overview {
   const byMonth = [...monthMap.values()].sort((a, b) => a.monthKey.localeCompare(b.monthKey));
 
   return {
-    itemsTotal: products.length - itemsExcluded,
-    itemsDone,
-    itemsPartial,
-    itemsPending,
-    itemsExcluded,
+    itemsTotal: principal.itemsTotal,
+    itemsDone: principal.itemsDone,
+    itemsPartial: principal.itemsPartial,
+    itemsPending: principal.itemsPending,
+    itemsExcluded: principal.itemsExcluded,
+    itemsOptional: principal.itemsOptional,
     tasksTotal: tasks.length,
     tasksDone: tasks.filter((t) => t.task_done).length,
 
-    unitsPlanned,
-    unitsBought,
-    unitsPending,
-    completion,
+    unitsPlanned: principal.unitsPlanned,
+    unitsBought: principal.unitsBought,
+    unitsPending: principal.unitsPending,
+    completion: principal.completion,
+    byList,
 
     totalSpent,
     contractedTotal,
@@ -504,9 +545,9 @@ export function computeOverview(input: OverviewInput): Overview {
       .filter((c) => c.level === 'atencao' || c.level === 'estourado')
       .sort((a, b) => (b.usage ?? 0) - (a.usage ?? 0)),
     statusMix: [
-      { status: 'comprado' as ItemStatus, count: itemsDone },
-      { status: 'parcial' as ItemStatus, count: itemsPartial },
-      { status: 'pendente' as ItemStatus, count: itemsPending },
+      { status: 'comprado' as ItemStatus, count: principal.itemsDone },
+      { status: 'parcial' as ItemStatus, count: principal.itemsPartial },
+      { status: 'pendente' as ItemStatus, count: principal.itemsPending },
     ],
   };
 }

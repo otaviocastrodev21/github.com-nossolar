@@ -171,11 +171,19 @@ export function Reports() {
         {/* ── Painel-resumo ── */}
         <Card className="card-pad">
           <h2 className="eyebrow mb-3">O que entra nos relatórios agora</h2>
-          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
             <Summary label="Itens cadastrados" value={integer(items.length)} />
             <Summary label="Compras registradas" value={integer(purchases.length)} />
             <Summary label="Total efetivamente gasto" value={money(overview.totalSpent)} />
             <Summary label="Conclusão do enxoval" value={percentPoints(overview.completion * 100)} />
+            <Summary
+              label="Conclusão da primeira compra"
+              value={percentPoints(overview.byList.pc.completion * 100)}
+            />
+            <Summary
+              label="Conclusão dos materiais de construção"
+              value={percentPoints(overview.byList.construcao.completion * 100)}
+            />
           </dl>
         </Card>
 
@@ -297,6 +305,9 @@ export function Reports() {
                         a célula fixa precisa de fundo opaco. */}
                     <th scope="row" className="sticky left-0 z-[1] max-sm:w-[10rem] max-sm:min-w-[10rem] bg-cream-200 px-4 py-3 text-left font-semibold text-ink sm:px-5">
                       Total
+                      <span className="block text-[0.6875rem] font-normal text-ink-muted">
+                        itens e conclusão: só o enxoval
+                      </span>
                     </th>
                     <td className="tnum px-3 py-3 text-right text-ink">
                       {integer(overview.itemsDone)}/{integer(overview.itemsTotal)}

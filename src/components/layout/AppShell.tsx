@@ -119,27 +119,67 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function ProgressSummary() {
+/**
+ * As porcentagens na barra lateral: o enxoval em destaque e, logo abaixo, a
+ * primeira compra e os materiais de construção. Cada uma abre a sua lista.
+ */
+function ProgressSummary({ onNavigate }: { onNavigate?: () => void }) {
   const { overview } = useSpace();
+  const enxoval = overview.byList.itens;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-cream-400/70 bg-gradient-to-br from-cream-50/80 via-olive-100/50 to-wood-100/60 p-3.5 shadow-card">
-      <span aria-hidden className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-olive-300/40 blur-2xl" />
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="eyebrow">Enxoval</span>
-        <span className="tnum text-[1.0625rem] font-semibold text-ink">
-          {percentPoints(overview.completion * 100)}
-        </span>
-      </div>
-      <Meter
-        ratio={overview.completion}
-        size="sm"
-        className="mt-2"
-        label={`Progresso do enxoval: ${percentPoints(overview.completion * 100)}`}
-      />
-      <p className="mt-2 text-[0.75rem] leading-snug text-ink-muted">
-        {overview.itemsDone} de {overview.itemsTotal} itens concluídos
-      </p>
+    <div className="flex flex-col gap-2">
+      <NavLink
+        to="/checklist"
+        onClick={onNavigate}
+        className="group relative block overflow-hidden rounded-2xl border border-cream-400/70 bg-gradient-to-br from-cream-50/80 via-olive-100/50 to-wood-100/60 p-3.5 shadow-card transition hover:border-olive-300"
+      >
+        <span aria-hidden className="absolute -right-6 -top-6 h-20 w-20 rounded-full bg-olive-300/40 blur-2xl" />
+        <div className="flex items-baseline justify-between gap-2">
+          <span className="eyebrow">Enxoval</span>
+          <span className="tnum text-[1.0625rem] font-semibold text-ink">
+            {percentPoints(enxoval.completion * 100)}
+          </span>
+        </div>
+        <Meter
+          ratio={enxoval.completion}
+          size="sm"
+          className="mt-2"
+          label={`Progresso do enxoval: ${percentPoints(enxoval.completion * 100)}`}
+        />
+        <p className="mt-2 text-[0.75rem] leading-snug text-ink-muted">
+          {enxoval.itemsDone} de {enxoval.itemsTotal} itens concluídos
+        </p>
+      </NavLink>
+
+      {(['pc', 'construcao'] as const).map((chave) => {
+        const prog = overview.byList[chave];
+        const rotulo = chave === 'pc' ? 'Primeira compra' : 'Materiais de construção';
+        return (
+          <NavLink
+            key={chave}
+            to={`/checklist?lista=${chave}`}
+            onClick={onNavigate}
+            className="block rounded-xl border border-cream-400/70 bg-cream-50/50 px-3.5 py-2.5 transition hover:border-olive-300 hover:bg-cream-50"
+          >
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="eyebrow">{rotulo}</span>
+              <span className="tnum text-[0.875rem] font-semibold text-ink">
+                {percentPoints(prog.completion * 100)}
+              </span>
+            </div>
+            <Meter
+              ratio={prog.completion}
+              size="xs"
+              className="mt-1.5"
+              label={`${rotulo}: ${percentPoints(prog.completion * 100)}`}
+            />
+            <p className="mt-1.5 text-[0.6875rem] leading-snug text-ink-muted">
+              {prog.itemsDone} de {prog.itemsTotal} itens
+            </p>
+          </NavLink>
+        );
+      })}
     </div>
   );
 }
@@ -343,7 +383,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <X className="h-4 w-4" aria-hidden />
               </button>
             </div>
-            <ProgressSummary />
+            <ProgressSummary onNavigate={() => setDrawerOpen(false)} />
             <div className="min-h-0 flex-1 overflow-y-auto">
               <NavList onNavigate={() => setDrawerOpen(false)} />
             </div>

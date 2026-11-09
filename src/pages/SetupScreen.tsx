@@ -29,7 +29,7 @@ const STEPS = [
         <code className="rounded bg-cream-300 px-1.5 py-0.5 font-mono text-[0.8125rem]">
           supabase/schema.sql
         </code>{' '}
-        e execute. Isso cria as tabelas, as políticas de segurança e os 174 itens da lista inicial
+        e execute. Isso cria as tabelas, as políticas de segurança e os 208 itens da lista inicial
         do enxoval.
       </>
     ),

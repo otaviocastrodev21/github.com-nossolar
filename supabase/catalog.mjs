@@ -11,11 +11,6 @@
  *   P = "Conforme preferência"  -> opcional + observação
  *   K = "Conforme consumo"      -> importante + observação
  *
- * Compras de mercado (primeira compra de supermercado, produtos de limpeza e
- * higiene pessoal) ficam fora: são reposição, feitas depois da casa montada.
- * Saíram as categorias G, M e N; as letras das outras não mudam, para não
- * desencontrar dos espaços que já existem. Ver src/lib/retiredItems.ts.
- *
  * Unidades de controle: unidade, peça, par, jogo, conjunto, pacote, embalagem,
  * lote, tarefa.
  *
@@ -171,6 +166,19 @@ export const catalog = [
     i('Sacos de lixo variados', 1, 'lote', 'E', 'Consumíveis'),
   ]),
 
+  cat('G', 'Produtos de limpeza', 'spray-can', [
+    i('Detergente', 2, 'unidade', 'E', 'Louças'),
+    i('Sabão para roupas', 1, 'embalagem', 'E', 'Roupas'),
+    i('Amaciante', 1, 'embalagem', 'O', 'Roupas'),
+    i('Desinfetante', 1, 'unidade', 'E', 'Geral'),
+    i('Limpador multiuso', 1, 'unidade', 'E', 'Geral'),
+    i('Limpador de banheiro', 1, 'unidade', 'E', 'Banheiro'),
+    i('Água sanitária', 1, 'unidade', 'O', 'Geral'),
+    i('Álcool para limpeza, quando apropriado', 1, 'unidade', 'O', 'Geral'),
+    i('Sabão em barra', 1, 'embalagem', 'O', 'Roupas'),
+    i('Papel-toalha', 1, 'pacote', 'O', 'Consumíveis'),
+  ]),
+
   cat('H', 'Sala de estar', 'sofa', [
     i('Sofá de 2 ou 3 lugares', 1, 'unidade', 'E', 'Mobiliário'),
     i('Rack ou painel para TV', 1, 'unidade', 'I', 'Mobiliário'),
@@ -239,6 +247,35 @@ export const catalog = [
     i('Separar contatos de emergência e manutenção', 1, 'tarefa', 'E', 'Verificações', { task: true }),
   ]),
 
+  cat('M', 'Higiene pessoal', 'bath', [
+    i('Escovas de dentes', 2, 'unidade', 'E', 'Bucal'),
+    i('Sabonetes', 2, 'unidade', 'E', 'Banho', { note: 'Ajuste a quantidade conforme o consumo do casal.' }),
+    i('Shampoo e condicionador', 1, 'lote', 'E', 'Banho'),
+    i('Desodorantes', 2, 'unidade', 'E', 'Cuidados diários'),
+    i('Creme dental', 1, 'unidade', 'E', 'Bucal'),
+    i('Fio dental', 1, 'unidade', 'E', 'Bucal'),
+    i('Algodão e cotonetes', 1, 'lote', 'O', 'Cuidados diários'),
+    i('Produtos pessoais de uso habitual', 1, 'lote', 'E', 'Cuidados diários'),
+    i('Medicamentos de uso habitual, se houver', 1, 'lote', 'N', 'Saúde', { qtyOpen: true }),
+  ]),
+
+  cat('N', 'Primeira compra de supermercado', 'shopping-cart', [
+    i('Café', 1, 'pacote', 'P', 'Mercearia', { frac: true }),
+    i('Açúcar ou adoçante', 1, 'embalagem', 'P', 'Mercearia', { frac: true }),
+    i('Sal', 1, 'pacote', 'E', 'Mercearia', { frac: true }),
+    i('Óleo ou azeite', 1, 'unidade', 'E', 'Mercearia', { frac: true }),
+    i('Arroz', 1, 'pacote', 'E', 'Mercearia', { frac: true }),
+    i('Feijão', 1, 'pacote', 'E', 'Mercearia', { frac: true }),
+    i('Macarrão', 2, 'pacote', 'E', 'Mercearia', { frac: true }),
+    i('Farinha e ingredientes habituais', 1, 'lote', 'P', 'Mercearia', { frac: true }),
+    i('Temperos básicos', 1, 'lote', 'E', 'Mercearia', { frac: true }),
+    i('Leite', 1, 'lote', 'K', 'Perecíveis', { frac: true }),
+    i('Ovos', 1, 'embalagem', 'K', 'Perecíveis', { frac: true }),
+    i('Pão', 1, 'lote', 'K', 'Perecíveis', { frac: true }),
+    i('Manteiga ou margarina', 1, 'unidade', 'P', 'Perecíveis', { frac: true }),
+    i('Água potável', 1, 'lote', 'E', 'Bebidas', { frac: true }),
+    i('Alimentos para as primeiras refeições', 1, 'lote', 'E', 'Perecíveis', { frac: true }),
+  ]),
 ];
 
 export const PRIORITY_MAP = {

@@ -86,7 +86,7 @@ Esse arquivo é a concatenação, na ordem correta, de:
 | `supabase/migrations/0001_schema.sql` | Tabelas, chaves, índices e colunas calculadas |
 | `supabase/migrations/0002_functions.sql` | Triggers financeiros e as funções (RPC) do app |
 | `supabase/migrations/0003_rls.sql` | Row Level Security, permissões por coluna e Realtime |
-| `supabase/migrations/0004_catalog_seed.sql` | A lista inicial do enxoval (11 categorias, 174 linhas) |
+| `supabase/migrations/0004_catalog_seed.sql` | A lista inicial do enxoval (14 categorias, 208 linhas) |
 
 Rodar o `schema.sql` mais de uma vez é seguro: tudo usa `if not exists`,
 `create or replace` e `on conflict`.
@@ -138,7 +138,7 @@ tela de configuração explicando o que falta — não quebra.
 ### 1.5 Primeiro acesso
 
 1. Abra o aplicativo. Não há tela nenhuma antes do painel: a sessão é aberta
-   sozinha e o espaço nasce já com as 11 categorias e as 174 linhas do enxoval.
+   sozinha e o espaço nasce já com as 14 categorias e as 208 linhas do enxoval.
 2. Em **Configurações → Você**, diga **como podemos te chamar** — é o nome que
    aparece ao lado de cada compra. Até lá, você consta como *Participante*.
 3. Ainda em **Configurações**, gere o **código de recuperação** e anote. Sem
@@ -166,7 +166,7 @@ Senha mínima: 8 caracteres. Sem um servidor de e-mail próprio (SMTP) não há
 ## 2. O que já vem cadastrado
 
 Ao criar o espaço, a RPC `create_space` copia o catálogo de referência para o
-casal. São **11 categorias** e **174 linhas** (as compras de mercado — primeira compra de supermercado, produtos de limpeza e higiene pessoal — ficam para depois da casa montada): **168 produtos** e **6 tarefas de
+casal. São **14 categorias** e **208 linhas**: **202 produtos** e **6 tarefas de
 verificação**.
 
 | | Categoria | Linhas |
@@ -221,7 +221,7 @@ em preços ou compras.
 ## 3. Como o casal compartilha a lista
 
 Cada pessoa entra com **e-mail e senha**. Na primeira entrada da conta o
-espaço nasce com os 174 itens; em qualquer outro aparelho, a mesma conta abre o
+espaço nasce com os 208 itens; em qualquer outro aparelho, a mesma conta abre o
 mesmo espaço. O Row Level Security é escrito sobre `auth.uid()`.
 
 Aparelhos que usavam o Nosso Lar antes do cadastro tinham uma sessão anônima.
@@ -233,7 +233,7 @@ Se o casal preferir duas contas, uma liga a outra ao espaço com um código:
 ```
 Aparelho da Ana                                 Aparelho do Bruno
    │                                                   │
-   ├─ cria a conta → espaço + 174 itens               ├─ cria a conta dele → espaço próprio
+   ├─ cria a conta → espaço + 208 itens               ├─ cria a conta dele → espaço próprio
    │  (ou o Bruno entra com a mesma conta)            │
    ├─ Configurações → gerar código  ──  ABCD-EFGH  ──► │
    │                                                   ├─ Configurações → Entrar em outro
@@ -398,7 +398,7 @@ garantido por `GRANT` por coluna, não só pela interface — ver
 | Página | Rota | O que faz |
 |---|---|---|
 | **Painel** | `/` | 12 indicadores, conclusão do enxoval, composição por status, gráficos de categoria e mês, orçamento × gasto real, últimas compras, próximos prioritários e alertas |
-| **Checklist** | `/checklist` | Os 174 registros com busca, filtros (categoria, prioridade, status), ordenação, visão em lista ou cards, ocultar concluídos, apenas pendentes, barra de progresso por item, adicionar/editar/duplicar/excluir e marcação rápida |
+| **Checklist** | `/checklist` | Os 208 registros com busca, filtros (categoria, prioridade, status), ordenação, visão em lista ou cards, ocultar concluídos, apenas pendentes, barra de progresso por item, adicionar/editar/duplicar/excluir e marcação rápida |
 | **Compras** | `/compras` | Histórico completo com filtros por data, categoria, loja e responsável; edição e exclusão com recálculo automático; exportação em CSV |
 | **Itens pendentes** | `/pendentes` | O que falta, agrupado por prioridade, com seleção para gerar a lista de compras da próxima ida à loja |
 | **Financeiro** | `/financeiro` | Orçamento total, por categoria e meta mensal; parcelas a vencer; despesas adicionais (frete, montagem, instalação, taxas) |
@@ -438,7 +438,7 @@ catalog_categories ── catalog_items     (catálogo de referência, só leitu
 | `spaces` | O espaço do casal: nome, subtítulo, meta mensal |
 | `space_members` | Participantes e papel (`dono` / `membro`) |
 | `space_codes` | Códigos de pareamento e de recuperação |
-| `categories` | As 11 categorias do enxoval (editáveis) |
+| `categories` | As 14 categorias do enxoval (editáveis) |
 | `items` | Os itens, com 6 colunas calculadas pelo próprio banco |
 | `purchases` | Cada compra registrada |
 | `installments` | Parcelas — **gerada por trigger**, somente leitura |
@@ -452,7 +452,7 @@ catalog_categories ── catalog_items     (catálogo de referência, só leitu
 
 | Função | Para que serve |
 |---|---|
-| `create_space(nome)` | Cria o espaço, o vínculo de dono e cadastra as 174 linhas |
+| `create_space(nome)` | Cria o espaço, o vínculo de dono e cadastra as 208 linhas |
 | `seed_space_catalog(espaço)` | Recadastra apenas o que falta da lista inicial |
 | `create_access_code(espaço, tipo)` | Gera o código de pareamento ou de recuperação |
 | `join_with_code(código)` | Entra no espaço com um código |
@@ -611,7 +611,7 @@ ponta:
 
 | | O que prova |
 |---|---|
-| 1 | Criar um espaço cadastra as 174 linhas, com preço R$ 0,00 e tudo pendente |
+| 1 | Criar um espaço cadastra as 208 linhas, com preço R$ 0,00 e tudo pendente |
 | 2–3 | O caso dos 6 pratos: compra parcial, depois a segunda, consolidando em R$ 125,00 e média de R$ 20,83 |
 | 4 | Parcelamento em 10×: as parcelas somam exato, 3 pagas viram R$ 1.080,00 no livro-caixa e R$ 2.520,00 comprometidos |
 | 5 | Excluir uma compra devolve o item ao estado anterior e leva as parcelas junto |
@@ -921,7 +921,7 @@ matiz e variando a luminosidade:
 Validada contra a superfície `#F7F6F2`: luminosidade monótona, salto de ΔL ≥ 0,06
 entre passos, ponta clara em 2,44:1 e matiz único (dispersão de 1°).
 
-As 11 categorias do enxoval são nominais — não há ordem natural entre "Banheiro"
+As 14 categorias do enxoval são nominais — não há ordem natural entre "Banheiro"
 e "Cozinha" — e são muitas para codificar por cor. Por isso o gráfico de
 despesas usa **um matiz só** para todas as barras (o comprimento já mostra a
 magnitude) e dobra a cauda em "Outras categorias". A evolução mensal é uma série
@@ -943,13 +943,11 @@ nenhum valor fica preso em tooltip.
 Duas coisas que vale registrar, para que não pareçam descuido:
 
 **A contagem de itens.** O briefing menciona 193 itens, mas a lista da seção 12
-tem 208 linhas (202 produtos + 6 tarefas de verificação) quando cada linha é
+tem **208 linhas** (202 produtos + 6 tarefas de verificação) quando cada linha é
 contada como um item independente, conforme a própria instrução da seção 12.
-Depois, a pedido do casal, saíram as compras de mercado — primeira compra de
-supermercado (15), produtos de limpeza (10) e higiene pessoal (9) —, que ficam
-para depois da casa montada. A lista inicial passou a ter **174 linhas** (168
-produtos + 6 tarefas). Espaços criados antes disso são limpos pelo aplicativo
-ao abrir, sem tocar em itens com compra, com cotação ou criados pelo casal.
+Cadastrei todas as 208 linhas. Se a intenção era chegar a 193, a diferença são
+15 linhas que o casal pode excluir em Configurações ou marcar como *não será
+comprado*.
 
 **As prioridades da tabela.** A seção 11 pede três prioridades — Essencial,
 Importante e Opcional — mas a tabela da seção 12 usa também "Conforme
