@@ -241,7 +241,11 @@ export interface ListProgress {
   unitsPlanned: number;
   unitsBought: number;
   unitsPending: number;
-  /** 0 a 1, por unidades */
+  /**
+   * 0 a 1: itens concluídos ÷ itens que contam — o mesmo "10 de 74" que a
+   * tela mostra ao lado. (Antes era por unidades, e 30 cabides pesavam como
+   * 30 itens; a porcentagem não batia com a contagem.)
+   */
   completion: number;
 }
 
@@ -253,9 +257,10 @@ export function listProgress(items: readonly Item[]): ListProgress {
     (acc, i) => acc + Math.min(Number(i.qty_bought) || 0, Number(i.qty_needed) || 0),
     0,
   );
+  const itemsDone = counted.filter((i) => i.status === 'comprado').length;
   return {
     itemsTotal: counted.length,
-    itemsDone: counted.filter((i) => i.status === 'comprado').length,
+    itemsDone,
     itemsPartial: counted.filter((i) => i.status === 'parcial').length,
     itemsPending: counted.filter((i) => i.status === 'pendente').length,
     itemsExcluded: products.filter((i) => i.excluded).length,
@@ -263,7 +268,7 @@ export function listProgress(items: readonly Item[]): ListProgress {
     unitsPlanned,
     unitsBought,
     unitsPending: counted.reduce((acc, i) => acc + (Number(i.qty_pending) || 0), 0),
-    completion: unitsPlanned > 0 ? Math.min(unitsBought / unitsPlanned, 1) : 0,
+    completion: counted.length > 0 ? itemsDone / counted.length : 0,
   };
 }
 

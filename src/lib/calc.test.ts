@@ -257,7 +257,8 @@ describe('formatação no padrão brasileiro', () => {
   });
 
   it('arredonda percentual em pontos inteiros', () => {
-    expect(percentPoints(45.67)).toBe('46%');
+    expect(percentPoints(45.67)).toBe('45,7%');
+    expect(percentPoints(10 / 74 * 100)).toBe('13,5%');
     expect(percentPoints(0)).toBe('0%');
     expect(percentPoints(100)).toBe('100%');
   });
@@ -482,18 +483,30 @@ describe('itens fora do plano de compras', () => {
 /* ════════════════════════ Percentual de conclusão ═════════════════════════ */
 
 describe('percentual de conclusão', () => {
-  it('é a proporção de unidades adquiridas entre os itens ativos', () => {
+  it('é itens concluídos ÷ itens que contam — o mesmo "X de Y" da tela', () => {
     const overview = overviewOf({
       items: [
-        makeItem({ id: 'a', name: 'Pratos', qty_needed: 6, qty_bought: 3 }),
+        makeItem({ id: 'a', name: 'Pratos', qty_needed: 6, qty_bought: 3 }), // parcial: não conta como feito
         makeItem({ id: 'b', name: 'Copos', qty_needed: 4, qty_bought: 4 }),
         makeItem({ id: 'c', name: 'Taças', qty_needed: 10, qty_bought: 0, excluded: true }),
+        makeItem({ id: 'd', name: 'Cabides', qty_needed: 30, qty_bought: 30 }), // 30 unidades pesam como 1 item
       ],
     });
 
-    // (3 + 4) / (6 + 4) = 70%
-    expect(overview.completion).toBeCloseTo(0.7, 5);
-    expect(percentPoints(overview.completion * 100)).toBe('70%');
+    // 2 concluídos de 3 que contam (a taça está fora)
+    expect(overview.itemsDone).toBe(2);
+    expect(overview.itemsTotal).toBe(3);
+    expect(overview.completion).toBeCloseTo(2 / 3, 5);
+    expect(percentPoints(overview.completion * 100)).toBe('66,7%');
+  });
+
+  it('10 de 74 itens dá 13,5%', () => {
+    const itens = Array.from({ length: 74 }, (_, n) =>
+      makeItem({ id: `i${n}`, name: `Item ${n}`, qty_needed: 2, qty_bought: n < 10 ? 2 : 0 }),
+    );
+    const overview = overviewOf({ items: itens });
+    expect(`${overview.itemsDone} de ${overview.itemsTotal}`).toBe('10 de 74');
+    expect(percentPoints(overview.completion * 100)).toBe('13,5%');
   });
 
   it('é zero quando nada foi planejado', () => {
@@ -979,7 +992,7 @@ describe('recorte por categoria', () => {
     expect(cozinha?.spent).toBe(55);
     expect(cozinha?.budget).toBe(500);
     expect(cozinha?.estimatedRemaining).toBe(120); // 4 pendentes × R$ 30,00
-    expect(cozinha?.completion).toBeCloseTo(2 / 6, 5);
+    expect(cozinha?.completion).toBe(0); // 2 de 6 pratos: parcial, ainda não concluído
 
     expect(quarto?.contracted).toBe(2000);
     expect(quarto?.spent).toBe(500); // 1 de 4 parcelas
@@ -1001,7 +1014,7 @@ describe('três listas, cada uma com a sua conta', () => {
   it('o enxoval (lista principal) não conta primeira compra nem construção', () => {
     expect(overview.itemsTotal).toBe(1); // só a panela; o vaso é opcional
     expect(overview.unitsPlanned).toBe(2);
-    expect(overview.completion).toBeCloseTo(0.5);
+    expect(overview.completion).toBe(0); // panela parcial (1 de 2): 0 de 1 item concluído
     expect(overview.byList.itens.itemsTotal).toBe(1);
   });
 

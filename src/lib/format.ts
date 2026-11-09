@@ -62,10 +62,16 @@ export function percent(ratio: number | null | undefined): string {
   return pctFmt.format(n);
 }
 
-/** 45.67 -> "46%" (já em pontos percentuais, arredondado) */
+/** Pontos percentuais com até uma casa: 45.67 → "45,7%". */
+const pontosFmt = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+
+/**
+ * 13.513… → "13,5%"; 70 → "70%". Uma casa decimal: com o número inteiro,
+ * "10 de 74" aparecia como 14%, e a conta não parecia bater.
+ */
 export function percentPoints(points: number | null | undefined): string {
   const n = Number.isFinite(Number(points)) ? Number(points) : 0;
-  return `${intFmt.format(Math.round(n))}%`;
+  return `${pontosFmt.format(Math.round(n * 10) / 10)}%`;
 }
 
 /** "2026-03-14" -> "14/03/2026" */

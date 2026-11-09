@@ -72,7 +72,7 @@ describe('HeroFigure', () => {
     );
 
     expect(screen.getByText('Conclusão do enxoval')).toBeTruthy();
-    expect(screen.getByText('38%')).toBeTruthy();
+    expect(screen.getByText('37,5%')).toBeTruthy();
     expect(screen.getByText('78 de 208 unidades')).toBeTruthy();
   });
 });

@@ -33,7 +33,7 @@ Realtime) · Recharts · SheetJS/jsPDF · Electron 33 · vite-plugin-pwa · Vite
 
 ```
 npm run dev                # Vite em http://localhost:5173
-npm run verify             # typecheck + testes (110) + build — rode antes de commitar
+npm run verify             # typecheck + testes (111) + build — rode antes de commitar
 npm run desktop:verify     # monta e abre o Electron com --smoke; precisa imprimir "ok": true
 npm run desktop:dist:win   # gera os 4 instaladores em release/
 npm run gen:catalog        # regera 0004_catalog_seed.sql e schema.sql a partir de supabase/catalog.mjs
@@ -145,6 +145,9 @@ scripts/                  provisionamento do Supabase, teste de integração, í
     - **Itens opcionais saem da contagem e da porcentagem** em todas as listas, como
       "não será comprado" e tarefas. Regra única em `countsInProgress` (lists.ts).
     - Dinheiro (gasto, orçamento, estimado) continua somando as três listas.
+14. (09/11) **Porcentagem = itens concluídos ÷ itens que contam** (o mesmo "10 de 74"
+    da tela), não mais por unidades — 30 cabides pesavam como 30. Item parcial não
+    conta como concluído. `percentPoints` mostra uma casa decimal ("13,5%").
 
 ## 6. Pendências e pontos em aberto
 
